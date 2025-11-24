@@ -4,7 +4,7 @@ export const APP_NAME = "ATLAS BRAWLER";
 
 // Placeholder assets using Picsum and geometric patterns
 export const ASSETS = {
-  SKATER_IDLE: "/assets/celo_skateboard.png",
+  SKATER_IDLE: "/assets/super_character_sprite(olly_homepage).gif",
   SKATER_JUMP: "/assets/celo_skateboard.png",
   BG_CITY: "/assets/atlas_brawler_background_sprite.png",
   SHOP_ITEM: "/assets/celo_skateboard.png",
