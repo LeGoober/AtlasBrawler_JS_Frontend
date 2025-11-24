@@ -22,7 +22,7 @@ const Shop: React.FC<{ balance: number }> = ({ balance }) => {
         <div className="relative w-full max-w-md bg-gray-800 rounded-3xl p-6 shadow-2xl border-b-8 border-r-8 border-black/20">
             
             {/* TV Screen */}
-            <div className="w-full aspect-video bg-[#8899a6] rounded-[50px/20px] border-4 border-black relative overflow-hidden shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
+            <div className="w-full aspect-video bg-[#8899a6] rounded-[50px/20px] border-4 border-black relative overflow-hidden shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] pb-[3px] md:pb-0">
                 <div className="absolute inset-0 flex items-center justify-center">
                      <div className="text-center">
                          <h3 className="font-retro text-2xl text-black mb-2">{items[selectedItem].name}</h3>
