@@ -1,8 +1,39 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Copy, CheckCircle } from 'lucide-react';
 import { ScreenContainer, Header } from '../Shared';
+import { getPlayerBalance } from '../../src/services/api';
 
-const Profile: React.FC<{ balance: number }> = ({ balance }) => {
+interface ProfileProps {
+  balance: number;
+  walletAddress: string;
+}
+
+const Profile: React.FC<ProfileProps> = ({ balance, walletAddress }) => {
+  const [playerData, setPlayerData] = useState({
+    username: 'Skater',
+    wins: 0,
+    gamesPlayed: 0,
+  });
+
+  useEffect(() => {
+    if (walletAddress) {
+      getPlayerBalance(walletAddress)
+        .then((player) => {
+          setPlayerData({
+            username: player.username || 'Skater',
+            wins: player.totalWins || 0,
+            gamesPlayed: player.totalGamesPlayed || 0,
+          });
+        })
+        .catch((err) => {
+          console.error('Failed to fetch player data:', err);
+        });
+    }
+  }, [walletAddress]);
+
+  const copyAddress = () => {
+    navigator.clipboard.writeText(walletAddress);
+  };
   return (
     <ScreenContainer className="bg-[#87CEEB]"> {/* Sky blue background */}
       <Header balance={balance} showBack title="PROFILE" />
@@ -23,20 +54,22 @@ const Profile: React.FC<{ balance: number }> = ({ balance }) => {
                 </div>
 
                 <div className="mt-10 text-center">
-                    <h2 className="font-retro text-3xl text-black mb-1">Skater_One</h2>
+                    <h2 className="font-retro text-3xl text-black mb-1">{playerData.username}</h2>
                     <div className="flex items-center justify-center gap-2 bg-gray-100 p-2 rounded-lg border border-dashed border-gray-400">
-                        <span className="font-mono text-xs text-gray-600 truncate max-w-[150px]">0x71C...9A21</span>
-                        <Copy size={14} className="text-gray-500 cursor-pointer hover:text-black" />
+                        <span className="font-mono text-xs text-gray-600 truncate max-w-[150px]">
+                          {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'N/A'}
+                        </span>
+                        <Copy size={14} className="text-gray-500 cursor-pointer hover:text-black" onClick={copyAddress} />
                     </div>
                 </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-4">
                     <div className="bg-blue-50 p-2 border-2 border-black text-center">
-                        <span className="block font-retro text-2xl text-blue-600">12</span>
+                        <span className="block font-retro text-2xl text-blue-600">{playerData.wins}</span>
                         <span className="text-xs font-bold uppercase text-gray-500">Wins</span>
                     </div>
                     <div className="bg-red-50 p-2 border-2 border-black text-center">
-                        <span className="block font-retro text-2xl text-red-600">5</span>
+                        <span className="block font-retro text-2xl text-red-600">{playerData.gamesPlayed - playerData.wins}</span>
                         <span className="text-xs font-bold uppercase text-gray-500">Losses</span>
                     </div>
                 </div>

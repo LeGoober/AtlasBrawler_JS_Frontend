@@ -1,0 +1,13 @@
+{
+  "frames": {
+    "idle": ["neon-frame_%03-0.png", "neon-frame_%03-1.png", "neon-frame_%03-2.png"],
+    "frontside": ["neon-frame_%03-4.png", "neon-frame_%03-5.png", "neon-frame_%03-6.png"],
+    "backside": ["neon-frame_%03-8.png", "neon-frame_%03-9.png", "neon-frame_%03-10.png"],
+    "punch": ["neon-frame_%03-1.png", "neon-frame_%03-2.png"]
+  },
+  "meta": {
+    "frameWidth": 64,
+    "frameHeight": 64,
+    "animationSpeed": 0.2
+  }
+}
