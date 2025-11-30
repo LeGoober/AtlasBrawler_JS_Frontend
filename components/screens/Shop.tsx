@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Globe } from 'lucide-react';
+import { Globe, Check, X } from 'lucide-react';
 import { ScreenContainer, Header, RetroButton } from '../Shared';
 import { ASSETS } from '../../constants';
 
 const Shop: React.FC<{ balance: number }> = ({ balance }) => {
   const [selectedItem, setSelectedItem] = useState(0);
   const [dialRotation, setDialRotation] = useState(0);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   
   const items = [
     { id: 1, name: 'Cruiser Board', price: 0.05, img: ASSETS.SHOP_ITEM },
@@ -16,6 +18,18 @@ const Shop: React.FC<{ balance: number }> = ({ balance }) => {
   const handleDialClick = () => {
     setSelectedItem((prev) => (prev + 1) % items.length);
     setDialRotation((prev) => prev + 120);
+  };
+
+  const handlePurchase = () => {
+    const item = items[selectedItem];
+    if (balance >= item.price) {
+      setPurchaseSuccess(true);
+      setShowPurchaseModal(true);
+      // TODO: Implement actual purchase logic with backend
+    } else {
+      setPurchaseSuccess(false);
+      setShowPurchaseModal(true);
+    }
   };
 
   return (
@@ -87,10 +101,53 @@ const Shop: React.FC<{ balance: number }> = ({ balance }) => {
         </div>
 
         <div className="fixed bottom-6 left-4 right-4 max-w-2xl md:max-w-3xl mx-auto">
-            <RetroButton label="Purchase" variant="primary" className="w-full text-xl shadow-xl" />
+            <RetroButton 
+              label="Purchase" 
+              variant="primary" 
+              className="w-full text-xl shadow-xl" 
+              onClick={handlePurchase}
+            />
         </div>
 
       </div>
+
+      {/* Purchase Modal */}
+      {showPurchaseModal && (
+        <div className="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-8 backdrop-blur-sm">
+          <div className="bg-white border-4 border-black p-8 max-w-md w-full rounded-lg shadow-2xl">
+            {purchaseSuccess ? (
+              <>
+                <Check size={80} className="text-green-500 mx-auto mb-4" />
+                <h2 className="font-retro text-3xl text-black text-center mb-4">
+                  PURCHASE SUCCESS!
+                </h2>
+                <p className="font-retro text-gray-700 text-center mb-2">
+                  {items[selectedItem].name}
+                </p>
+                <p className="font-retro text-green-600 text-center text-xl mb-6">
+                  -${items[selectedItem].price.toFixed(2)} cUSD
+                </p>
+              </>
+            ) : (
+              <>
+                <X size={80} className="text-red-500 mx-auto mb-4" />
+                <h2 className="font-retro text-3xl text-black text-center mb-4">
+                  INSUFFICIENT FUNDS
+                </h2>
+                <p className="font-retro text-gray-700 text-center mb-6">
+                  You need ${items[selectedItem].price.toFixed(2)} cUSD but only have ${balance.toFixed(2)} cUSD
+                </p>
+              </>
+            )}
+            <button
+              onClick={() => setShowPurchaseModal(false)}
+              className="w-full bg-celo-yellow text-black font-retro text-lg py-3 border-4 border-black hover:bg-yellow-400 uppercase"
+            >
+              {purchaseSuccess ? 'Awesome!' : 'OK'}
+            </button>
+          </div>
+        </div>
+      )}
     </ScreenContainer>
   );
 };

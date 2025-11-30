@@ -27,7 +27,7 @@ const Home: React.FC<{ balance: number }> = ({ balance }) => {
               alt="Atlas Brawler Logo"
             />
 
-            <div className="w-[86vw] max-w-[32rem] md:max-w-[28rem] border-4 border-black shadow-[0px_10px_0px_0px_#FFF600] transform -rotate-2 overflow-hidden bg-gray-800">
+            <div className="w-[86vw] max-w-[32rem] md:max-w-[42rem] border-4 border-black shadow-[0px_10px_0px_0px_#FFF600] transform -rotate-2 overflow-hidden bg-gray-800">
               <img
                 src={ASSETS.SKATER_IDLE}
                 alt="Character"
