@@ -31,13 +31,91 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
       console.error('Failed to save game session:', err);
     }
   };
-  const handlePush = () => {
-    setPushStrength((prev) => Math.min(prev + 20, 100));
-   
-    setTimeout(() => {
-      setPushStrength((prev) => Math.max(0, prev - 10));
-    }, 500);
+  // Swipe-down gesture tracking (touch and mouse)
+  const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const pushControllerRef = useRef<HTMLDivElement>(null);
+  const decayTimerRef = useRef<number | null>(null);
+  const isMouseDownRef = useRef(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    swipeStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now(),
+    };
   };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!swipeStartRef.current) return;
+    
+    const touch = e.touches[0];
+    const deltaY = touch.clientY - swipeStartRef.current.y;
+    
+    // Only track downward swipes
+    if (deltaY > 0) {
+      // Map swipe distance to push strength (0-100)
+      // Max swipe distance of 150px = 100% strength
+      const strength = Math.min((deltaY / 150) * 100, 100);
+      setPushStrength(strength);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    swipeStartRef.current = null;
+    
+    // Start gradual decay of push strength
+    if (decayTimerRef.current) {
+      clearInterval(decayTimerRef.current);
+    }
+    
+    decayTimerRef.current = window.setInterval(() => {
+      setPushStrength((prev) => {
+        const newStrength = Math.max(0, prev - 2);
+        if (newStrength === 0 && decayTimerRef.current) {
+          clearInterval(decayTimerRef.current);
+          decayTimerRef.current = null;
+        }
+        return newStrength;
+      });
+    }, 50); // Decay every 50ms
+  };
+
+  // Mouse support for desktop testing
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isMouseDownRef.current = true;
+    swipeStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      time: Date.now(),
+    };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isMouseDownRef.current || !swipeStartRef.current) return;
+    
+    const deltaY = e.clientY - swipeStartRef.current.y;
+    
+    if (deltaY > 0) {
+      const strength = Math.min((deltaY / 150) * 100, 100);
+      setPushStrength(strength);
+    }
+  };
+
+  const handleMouseUp = () => {
+    isMouseDownRef.current = false;
+    handleTouchEnd();
+  };
+
+  // Cleanup decay timer on unmount
+  useEffect(() => {
+    return () => {
+      if (decayTimerRef.current) {
+        clearInterval(decayTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleTrick = (trick: 'frontside' | 'backside') => {
     console.log(`Trick performed: ${trick}`);
     setScore((s) => s + 25);
@@ -57,7 +135,7 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
   const numBars = Math.floor(pushStrength / 20);
 
   return (
-    <ScreenContainer className="overflow-hidden bg-[#87CEEB]">
+    <ScreenContainer className="overflow-hidden bg-black">
       {/* PixiJS Game Canvas */}
       <PixiGame
         onScoreUpdate={setScore}
@@ -136,18 +214,41 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
       )}
       {/* CONTROLS OVERLAY */}
       <div className="absolute bottom-0 left-0 right-0 h-48 z-40 flex justify-between items-end p-4 pb-8">
-        {/* Left: Push Controller */}
+        {/* Left: Push Controller - Swipe Down Area */}
         <div className="flex flex-col items-center gap-2">
-          <button onClick={handlePush} className="relative w-32 h-36">
+          <div 
+            ref={pushControllerRef}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            className="relative w-32 h-36 cursor-pointer touch-none active:scale-95 transition-transform select-none"
+          >
             <img src={ASSETS.PUSH_CONTROLLER_BARE_LONG} alt="Push controller" className="w-full h-full object-contain pointer-events-none select-none" />
            
             {/* Stacked strength indicator bars overlayed */}
-            <div className="absolute left-[19%] top-[33%] bottom-6 w-4 h-4 flex flex-col-reverse items-center pointer-events-none transition-all duration-200">
+            <div className="absolute left-[17%] top-[33%] bottom-6 w-4 h-4 flex flex-col-reverse items-center pointer-events-none transition-all duration-200">
               {[...Array(numBars)].map((_, i) => (
                 <img key={i} src={ASSETS.PUSH_STRENGTH_INDICATOR} alt="Strength bar" className="w-full" />
               ))}
             </div>
-          </button>
+            
+            {/* Visual feedback overlay */}
+            <div 
+              className="absolute inset-0 bg-celo-yellow/20 rounded-lg opacity-0 transition-opacity duration-200 pointer-events-none"
+              style={{ opacity: pushStrength > 0 ? 0.3 : 0 }}
+            />
+          </div>
+          
+          {/* Swipe instruction hint */}
+          {pushStrength === 0 && (
+            <div className="text-white text-xs font-retro animate-pulse bg-black/50 px-2 py-1 rounded">
+              Swipe Down
+            </div>
+          )}
         </div>
         {/* Right: Action Buttons */}
         <div className="relative w-48 h-48 bg-gray-700/80 p-4 rounded-3xl border-4 border-gray-600 transform -rotate-12 shadow-xl backdrop-blur-sm">
@@ -160,10 +261,10 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
             <button onClick={() => handleTrick('frontside')} className="w-12 h-13 rounded-full p-0 border-0 bg-transparent transform rotate-12 translate-x-2 translate-y-3">
               <img src={ASSETS.BTN_FRONTSIDE} alt="Frontside" className="w-full h-full object-contain" />
             </button>
-            <button onClick={() => handleTrick('backside')} className="w-23 h-12 rounded-full p-0 border-0 bg-transparent transform -rotate-12 -translate-x-2 translate-y-9">
+            <button onClick={() => handleTrick('backside')} className="w-23 h-12 rounded-full p-0 border-0 bg-transparent transform -rotate-12 -translate-x-1 translate-y-9">
               <img src={ASSETS.BTN_BACKSIDE} alt="Backside" className="w-full h-full object-contain" />
             </button>
-            <img src={ASSETS.JOYSTICK} alt="Joystick" className="top-10 w-13 h-13 object-contain pointer-events-none select-none justify-self-end translate-x-3 translate-y-6" />
+            <img src={ASSETS.JOYSTICK} alt="Joystick" className="top-10 w-13 h-13 object-contain pointer-events-none select-none justify-self-end translate-x-1 translate-y-6" />
           </div>
         </div>
       </div>

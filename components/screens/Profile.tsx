@@ -19,6 +19,10 @@ const Profile: React.FC<ProfileProps> = ({ balance, walletAddress }) => {
     if (walletAddress) {
       getPlayerBalance(walletAddress)
         .then((player) => {
+          if (!player) {
+            setPlayerData({ username: 'Skater', wins: 0, gamesPlayed: 0 });
+            return;
+          }
           setPlayerData({
             username: player.username || 'Skater',
             wins: player.totalWins || 0,

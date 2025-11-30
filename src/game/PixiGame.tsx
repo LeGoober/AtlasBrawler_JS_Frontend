@@ -45,6 +45,8 @@ export const PixiGame: React.FC<PixiGameProps> = ({
     isHit: false,
     hitCooldown: 0,
     isPunching: false,
+    playerBaseX: 0,  // Base X position for player
+    playerTargetX: 0, // Target X position for smooth movement
   });
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export const PixiGame: React.FC<PixiGameProps> = ({
       autoDensity: true,
     }).then(async () => {
       if (!mounted || !canvasRef.current) {
-        app.destroy(true);
+        app.destroy(true, { children: true, texture: true, textureSource: true });
         return;
       }
 
@@ -94,21 +96,36 @@ export const PixiGame: React.FC<PixiGameProps> = ({
         ASSETS.ENEMY_FRAMES.FRAME_8,
       ];
 
+      // Store frame paths for lazy loading
+      let bgFramePaths: string[] = [];
+      if ((ASSETS as any).BG_CITY_FRAMES && Array.isArray((ASSETS as any).BG_CITY_FRAMES)) {
+        bgFramePaths = (ASSETS as any).BG_CITY_FRAMES;
+      }
+
       try {
-        await PIXI.Assets.load([...playerFramePaths, ...enemyFramePaths]);
+        // Preload all assets, including the first background frame
+        await PIXI.Assets.load([...playerFramePaths, ...enemyFramePaths, ASSETS.BG_CITY, ...bgFramePaths]);
       } catch (err) {
         console.error('Failed to load sprite frames:', err);
       }
-
+      
       // Create textures
       const playerTextures = playerFramePaths.map(path => {
         const texture = PIXI.Texture.from(path);
+        if (!texture) {
+          console.warn('Player texture missing or invalid:', path);
+          return PIXI.Texture.WHITE;
+        }
         texture.source.scaleMode = 'nearest';
         return texture;
       });
 
       const enemyTextures = enemyFramePaths.map(path => {
         const texture = PIXI.Texture.from(path);
+        if (!texture) {
+          console.warn('Enemy texture missing or invalid:', path);
+          return PIXI.Texture.WHITE;
+        }
         texture.source.scaleMode = 'nearest';
         return texture;
       });
@@ -125,17 +142,40 @@ export const PixiGame: React.FC<PixiGameProps> = ({
       const bgContainer = new PIXI.Container();
       bgContainer.zIndex = 0;
       app.stage.addChild(bgContainer);
+      // Background animation frame tracking
+      let bgFrameIndex = 0;
+      let bgAnimTickCounter = 0;
 
-      // Tiled brick wall background
-      const bgTexture = PIXI.Texture.from(ASSETS.PARALLAX_LAYER_4);
-      bgTexture.source.scaleMode = 'nearest';
-      const bgTiling = new PIXI.TilingSprite({
-        texture: bgTexture,
-        width: app.screen.width * 2,
-        height: app.screen.height,
-      });
-      bgTiling.tileScale.set(2, 2);
-      bgContainer.addChild(bgTiling);
+      // Load background frames (lazy loading to avoid 75-file preload)
+      let bgTexture: PIXI.Texture;
+      let bgSprite: PIXI.Sprite;
+      
+      // Load first frame only
+      try {
+        bgTexture = PIXI.Texture.from(ASSETS.BG_CITY);
+        bgTexture.source.scaleMode = 'nearest';
+      } catch (e) {
+        console.warn('Failed to load BG_CITY, using PARALLAX_LAYER_4 as fallback', e);
+        bgTexture = PIXI.Texture.from(ASSETS.PARALLAX_LAYER_4);
+        if (bgTexture) bgTexture.source.scaleMode = 'nearest';
+      }
+      
+      // Create regular Sprite (not TilingSprite) for individual frames
+      bgSprite = new PIXI.Sprite(bgTexture);
+      bgSprite.anchor.set(0, 0);
+      
+      // Scale to fit screen while maintaining aspect ratio
+      const bgScale = Math.max(
+        app.screen.width / bgSprite.width,
+        app.screen.height / bgSprite.height
+      );
+      bgSprite.scale.set(bgScale);
+      
+      // Center the sprite
+      bgSprite.x = (app.screen.width - bgSprite.width * bgScale) / 2;
+      bgSprite.y = 0;
+      
+      bgContainer.addChild(bgSprite);
 
       // === ENEMY CONTAINER (Z=10) ===
       const enemyContainer = new PIXI.Container();
@@ -143,16 +183,31 @@ export const PixiGame: React.FC<PixiGameProps> = ({
       app.stage.addChild(enemyContainer);
 
       // === PLAYER SPRITE (Z=20) ===
+      // Player uses single idle frame, only animates on action
       const playerSprite = new PIXI.AnimatedSprite(animations.idle);
       playerSprite.anchor.set(0.5);
-      playerSprite.x = app.screen.width * 0.3;
-      playerSprite.y = app.screen.height * 0.65;
-      playerSprite.scale.set(0.4);
-      playerSprite.animationSpeed = 0.2;
-      playerSprite.play();
+      const startX = app.screen.width * 0.2;
+      playerSprite.x = startX;
+      playerSprite.y = app.screen.height * 0.7;
+      playerSprite.scale.set(2.0);
+      playerSprite.animationSpeed = 0;  // No auto-animation
+      playerSprite.loop = false;         // Only play on action
+      playerSprite.gotoAndStop(0);       // Start at idle frame 0
       playerSprite.zIndex = 20;
       app.stage.addChild(playerSprite);
       playerSpriteRef.current = playerSprite;
+      
+      // Initialize player position tracking
+      gameStateRef.current.playerBaseX = startX;
+      gameStateRef.current.playerTargetX = startX;
+
+      // === FOREGROUND STRIP (Z=25) - Ground layer above controls ===
+      const fgConfig = (ASSETS as any).FOREGROUND_STRIP || { HEIGHT: 80, COLOR: 0x3D3D3D, Y_OFFSET: 0.75 };
+      const foregroundStrip = new PIXI.Graphics();
+      foregroundStrip.rect(0, app.screen.height * fgConfig.Y_OFFSET, app.screen.width, fgConfig.HEIGHT);
+      foregroundStrip.fill(fgConfig.COLOR);
+      foregroundStrip.zIndex = 25;
+      app.stage.addChild(foregroundStrip);
 
       // === UI LAYER (Z=30) ===
       const uiContainer = new PIXI.Container();
@@ -164,15 +219,27 @@ export const PixiGame: React.FC<PixiGameProps> = ({
 
       // === ANIMATION CONTROL ===
       const switchAnimation = (name: AnimationName, onComplete?: () => void) => {
-        if (!playerSpriteRef.current || currentAnimationRef.current === name) return;
+        if (!playerSpriteRef.current) return;
         
         currentAnimationRef.current = name;
         playerSpriteRef.current.textures = animations[name];
-        playerSpriteRef.current.loop = name !== 'punch';
-        playerSpriteRef.current.gotoAndPlay(0);
-
-        if (onComplete && name === 'punch') {
-          setTimeout(onComplete, 400);
+        
+        if (name === 'idle') {
+          // Idle state: single static frame
+          playerSpriteRef.current.loop = false;
+          playerSpriteRef.current.gotoAndStop(0);
+        } else {
+          // Action animations: play once
+          playerSpriteRef.current.loop = false;
+          playerSpriteRef.current.animationSpeed = 0.2;
+          playerSpriteRef.current.gotoAndPlay(0);
+          
+          // Auto-return to idle after animation
+          const duration = name === 'punch' ? 400 : 600;
+          setTimeout(() => {
+            if (onComplete) onComplete();
+            switchAnimation('idle');
+          }, duration);
         }
       };
 
@@ -219,16 +286,16 @@ export const PixiGame: React.FC<PixiGameProps> = ({
         isPerformingTrick = true;
 
         switchAnimation('frontside', () => {
-          switchAnimation('idle');
           isPerformingTrick = false;
         });
 
-        playerSpriteRef.current.rotation = -Math.PI / 4;
-        const originalX = playerSpriteRef.current.x;
+        // Smoother rotation and jump
+        const originalRotation = playerSpriteRef.current.rotation;
         const originalY = playerSpriteRef.current.y;
         
-        playerSpriteRef.current.x -= 30;
-        playerSpriteRef.current.y -= 20;
+        // Gradual rotation
+        playerSpriteRef.current.rotation = -Math.PI / 6; // Less extreme (-30°)
+        playerSpriteRef.current.y -= 15; // Smaller jump
 
         // Punch nearest enemy
         const nearest = gameStateRef.current.enemies[0];
@@ -241,13 +308,13 @@ export const PixiGame: React.FC<PixiGameProps> = ({
           }
         }
 
+        // Smooth return to normal
         setTimeout(() => {
           if (playerSpriteRef.current) {
-            playerSpriteRef.current.rotation = 0;
-            playerSpriteRef.current.x = originalX;
+            playerSpriteRef.current.rotation = originalRotation;
             playerSpriteRef.current.y = originalY;
           }
-        }, 600);
+        }, 400);
       };
 
       const performBackside = () => {
@@ -255,24 +322,23 @@ export const PixiGame: React.FC<PixiGameProps> = ({
         isPerformingTrick = true;
 
         switchAnimation('backside', () => {
-          switchAnimation('idle');
           isPerformingTrick = false;
         });
 
-        playerSpriteRef.current.rotation = Math.PI / 4;
-        const originalX = playerSpriteRef.current.x;
+        // Smoother rotation and jump
+        const originalRotation = playerSpriteRef.current.rotation;
         const originalY = playerSpriteRef.current.y;
         
-        playerSpriteRef.current.x += 30;
-        playerSpriteRef.current.y -= 20;
+        playerSpriteRef.current.rotation = Math.PI / 6; // Less extreme (+30°)
+        playerSpriteRef.current.y -= 15; // Smaller jump
 
+        // Smooth return to normal
         setTimeout(() => {
           if (playerSpriteRef.current) {
-            playerSpriteRef.current.rotation = 0;
-            playerSpriteRef.current.x = originalX;
+            playerSpriteRef.current.rotation = originalRotation;
             playerSpriteRef.current.y = originalY;
           }
-        }, 600);
+        }, 400);
       };
 
       const performPunch = () => {
@@ -280,7 +346,6 @@ export const PixiGame: React.FC<PixiGameProps> = ({
         gameStateRef.current.isPunching = true;
 
         switchAnimation('punch', () => {
-          switchAnimation('idle');
           gameStateRef.current.isPunching = false;
         });
 
@@ -301,8 +366,20 @@ export const PixiGame: React.FC<PixiGameProps> = ({
       const handleResize = () => {
         if (!app) return;
         app.renderer.resize(window.innerWidth, window.innerHeight);
-        bgTiling.width = app.screen.width * 2;
-        bgTiling.height = app.screen.height;
+        
+        // Rescale background sprite to fit new screen size
+        const newBgScale = Math.max(
+          app.screen.width / bgSprite.texture.width,
+          app.screen.height / bgSprite.texture.height
+        );
+        bgSprite.scale.set(newBgScale);
+        bgSprite.x = (app.screen.width - bgSprite.width) / 2;
+        bgSprite.y = 0;
+        
+        // Resize foreground strip
+        foregroundStrip.clear();
+        foregroundStrip.rect(0, app.screen.height * fgConfig.Y_OFFSET, app.screen.width, fgConfig.HEIGHT);
+        foregroundStrip.fill(fgConfig.COLOR);
       };
       window.addEventListener('resize', handleResize);
 
@@ -331,8 +408,40 @@ export const PixiGame: React.FC<PixiGameProps> = ({
         // Update momentum
         state.momentum = pushStrength;
 
-        // Background scrolling
-        bgTiling.tilePosition.x -= state.momentum * deltaTime * 30;
+        // Move player forward based on momentum (smooth horizontal movement)
+        if (state.momentum > 5 && playerSpriteRef.current) {
+          // Increase target position based on momentum
+          state.playerTargetX += state.momentum * deltaTime * 2;
+          
+          // Smooth interpolation to target position
+          const currentX = playerSpriteRef.current.x;
+          const newX = currentX + (state.playerTargetX - currentX) * 0.1;
+          playerSpriteRef.current.x = newX;
+          
+          // Keep player from going off-screen right
+          const maxX = app.screen.width * 0.7;
+          if (playerSpriteRef.current.x > maxX) {
+            playerSpriteRef.current.x = maxX;
+            state.playerTargetX = maxX;
+          }
+        }
+
+        // Background frame animation (smooth cycling based on momentum)
+        if (bgFramePaths.length > 1 && state.momentum > 5) {
+          // Smoother frame progression - accumulate fractional progress
+          const frameSpeed = state.momentum / 100;  // 0-1 range
+          bgAnimTickCounter += frameSpeed;
+          
+          if (bgAnimTickCounter >= 1) {
+            bgAnimTickCounter = 0;
+            bgFrameIndex = (bgFrameIndex + 1) % bgFramePaths.length;
+            
+            // Lazy load the texture on-demand
+            const newTexture = PIXI.Texture.from(bgFramePaths[bgFrameIndex]);
+            newTexture.source.scaleMode = 'nearest';
+            bgSprite.texture = newTexture;
+          }
+        }
 
         // Add score based on momentum
         state.score += state.momentum * 0.1 * deltaTime;
@@ -354,10 +463,15 @@ export const PixiGame: React.FC<PixiGameProps> = ({
           if (playerSpriteRef.current && !state.isHit && checkCollision(playerSpriteRef.current, enemy.sprite)) {
             state.isHit = true;
             state.hitCooldown = 2;
-            if (playerSpriteRef.current) playerSpriteRef.current.tint = 0xff0000;
+            
+            // Subtle screen shake instead of red flash
+            const originalY = playerSpriteRef.current.y;
+            playerSpriteRef.current.y += 3;
+            setTimeout(() => {
+              if (playerSpriteRef.current) playerSpriteRef.current.y = originalY;
+            }, 50);
             
             setTimeout(() => {
-              if (playerSpriteRef.current) playerSpriteRef.current.tint = 0xffffff;
               state.isHit = false;
             }, 200);
           }
@@ -400,9 +514,13 @@ export const PixiGame: React.FC<PixiGameProps> = ({
     return () => {
       mounted = false;
       window.removeEventListener('resize', () => {});
+      
       if (appRef.current) {
-        appRef.current.destroy(true);
+        // The 'true' argument will destroy the renderer and its plugins
+        appRef.current.destroy(true, { children: true, texture: true, textureSource: true });
+        appRef.current = null;
       }
+
       (window as any).pixiPerformFrontside = undefined;
       (window as any).pixiPerformBackside = undefined;
       (window as any).pixiPerformPunch = undefined;

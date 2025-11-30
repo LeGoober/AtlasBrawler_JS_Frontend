@@ -34,6 +34,13 @@ const App: React.FC = () => {
     if (address) {
       getPlayerBalance(address)
         .then((player) => {
+          if (!player) {
+            // Player not found (404) — keep default state (balance 0) and allow user to register
+            console.log('Player not registered', address);
+            setGameState(prev => ({ ...prev, balance: 0 }));
+            return;
+          }
+
           setGameState(prev => ({
             ...prev,
             balance: player.softTokenBalance || 0,
@@ -42,6 +49,8 @@ const App: React.FC = () => {
         })
         .catch((err) => {
           console.log("Player not registered or backend unavailable:", err);
+          // fallback to 0 balance
+          setGameState(prev => ({ ...prev, balance: 0 }));
         });
     }
   }, [address]);

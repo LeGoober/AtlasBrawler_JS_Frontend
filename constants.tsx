@@ -6,7 +6,22 @@ export const APP_NAME = "ATLAS BRAWLER";
 export const ASSETS = {
   SKATER_IDLE: "/assets/super_character_sprite(olly_homepage).gif",
   SKATER_JUMP: "/assets/celo_skateboard.png",
-  BG_CITY: "/assets/atlas_brawler_background_sprite.png",
+  BG_CITY: "/assets/atlas_brawler_background_sprite/bg-frame-1.png",
+  BG_CITY_FRAMES: Array.from({ length: 75 }, (_, i) => 
+    `/assets/atlas_brawler_background_sprite/bg-frame-${i + 1}.png`
+  ),
+  // Background tiling scale (smaller -> background textures render smaller)
+  BG_TILE_SCALE: 0.2,
+  // Controls how fast the background scrolls. Lower = slower.
+  BG_SCROLL_SPEED: 30,
+  // Ticks between background animation frame changes
+  BG_ANIM_INTERVAL: 6,
+  // Foreground strip settings (ground layer above controls)
+  FOREGROUND_STRIP: {
+    HEIGHT: 80,
+    COLOR: 0x3D3D3D,
+    Y_OFFSET: 0.75, // Position as fraction of screen height
+  },
   SHOP_ITEM: "/assets/celo_skateboard.png",
   LOGO: "/assets/atlas_brawler_logo_component.png",
   BTN_PROFILE: "/assets/btn-profile.png",
@@ -37,31 +52,31 @@ export const ASSETS = {
   
   // Player Animation Frames
   PLAYER_FRAMES: {
-    IDLE_0: "/assets/sprites/player/neon-frame_%03-0.png",
-    IDLE_1: "/assets/sprites/player/neon-frame_%03-1.png",
-    IDLE_2: "/assets/sprites/player/neon-frame_%03-2.png",
-    FRONTSIDE_4: "/assets/sprites/player/neon-frame_%03-4.png",
-    FRONTSIDE_5: "/assets/sprites/player/neon-frame_%03-5.png",
-    FRONTSIDE_6: "/assets/sprites/player/neon-frame_%03-6.png",
-    BACKSIDE_8: "/assets/sprites/player/neon-frame_%03-8.png",
-    BACKSIDE_9: "/assets/sprites/player/neon-frame_%03-9.png",
-    BACKSIDE_10: "/assets/sprites/player/neon-frame_%03-10.png",
+    IDLE_0: "/assets/sprites/player/player-0.png",
+    IDLE_1: "/assets/sprites/player/player-1.png",
+    IDLE_2: "/assets/sprites/player/player-2.png",
+    FRONTSIDE_4: "/assets/sprites/player/player-4.png",
+    FRONTSIDE_5: "/assets/sprites/player/player-5.png",
+    FRONTSIDE_6: "/assets/sprites/player/player-6.png",
+    BACKSIDE_8: "/assets/sprites/player/player-8.png",
+    BACKSIDE_9: "/assets/sprites/player/player-9.png",
+    BACKSIDE_10: "/assets/sprites/player/player-10.png",
   },
   
   // Enemy Animation Frames
   ENEMY_FRAMES: {
-    FRAME_0: "/assets/sprites/enemy/neon-frame_%03-0.png",
-    FRAME_1: "/assets/sprites/enemy/neon-frame_%03-1.png",
-    FRAME_2: "/assets/sprites/enemy/neon-frame_%03-2.png",
-    FRAME_3: "/assets/sprites/enemy/neon-frame_%03-3.png",
-    FRAME_4: "/assets/sprites/enemy/neon-frame_%03-4.png",
-    FRAME_5: "/assets/sprites/enemy/neon-frame_%03-5.png",
-    FRAME_6: "/assets/sprites/enemy/neon-frame_%03-6.png",
-    FRAME_7: "/assets/sprites/enemy/neon-frame_%03-7.png",
-    FRAME_8: "/assets/sprites/enemy/neon-frame_%03-8.png",
-    FRAME_9: "/assets/sprites/enemy/neon-frame_%03-9.png",
-    FRAME_10: "/assets/sprites/enemy/neon-frame_%03-10.png",
-    FRAME_11: "/assets/sprites/enemy/neon-frame_%03-11.png",
+    FRAME_0: "/assets/sprites/enemy/enemy-0.png",
+    FRAME_1: "/assets/sprites/enemy/enemy-1.png",
+    FRAME_2: "/assets/sprites/enemy/enemy-2.png",
+    FRAME_3: "/assets/sprites/enemy/enemy-3.png",
+    FRAME_4: "/assets/sprites/enemy/enemy-4.png",
+    FRAME_5: "/assets/sprites/enemy/enemy-5.png",
+    FRAME_6: "/assets/sprites/enemy/enemy-6.png",
+    FRAME_7: "/assets/sprites/enemy/enemy-7.png",
+    FRAME_8: "/assets/sprites/enemy/enemy-8.png",
+    FRAME_9: "/assets/sprites/enemy/enemy-9.png",
+    FRAME_10: "/assets/sprites/enemy/enemy-10.png",
+    FRAME_11: "/assets/sprites/enemy/enemy-11.png",
   },
   
   // Animation Config

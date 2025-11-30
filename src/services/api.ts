@@ -54,10 +54,14 @@ export async function registerPlayer(
 /**
  * Get player balance
  */
-export async function getPlayerBalance(walletAddress: string): Promise<PlayerResponse> {
+export async function getPlayerBalance(walletAddress: string): Promise<PlayerResponse | null> {
   const response = await fetch(`${API_BASE}/players/${walletAddress}/balance`);
   
   if (!response.ok) {
+    // If player is not found, return null instead of throwing so callers can handle this case
+    if (response.status === 404) {
+      return null;
+    }
     throw new Error(`Failed to fetch balance: ${response.statusText}`);
   }
   
