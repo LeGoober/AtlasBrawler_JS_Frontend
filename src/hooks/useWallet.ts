@@ -1,26 +1,20 @@
-/**
- * Web3 Wallet Hook - MetaMask & Celo Integration
- */
-
+// src/hooks/useWallet.ts
 import { useState, useEffect } from 'react';
+import WalletConnectProvider from '@walletconnect/web3-provider';
+import { BrowserProvider, JsonRpcSigner } from 'ethers';
 
 declare global {
   interface Window {
-    ethereum?: any;
+    ethereum?: any; // Injected provider (MetaMask, MiniPay, etc.)
   }
 }
 
-const CELO_SEPOLIA_CHAIN_ID = '0xAA36A7'; // 11142220 in hex
-const CELO_SEPOLIA_CONFIG = {
-  chainId: CELO_SEPOLIA_CHAIN_ID,
-  chainName: 'Celo Alfajores Testnet',
-  nativeCurrency: {
-    name: 'CELO',
-    symbol: 'CELO',
-    decimals: 18,
-  },
-  rpcUrls: ['https://alfajores-forno.celo-testnet.org'],
-  blockExplorerUrls: ['https://alfajores.celoscan.io'],
+const CELO_SEPOLIA = {
+  chainId: '0xAA36A7', // 11155111 in hex
+  chainName: 'Celo Sepolia',
+  nativeCurrency: { name: 'CELO', symbol: 'CELO', decimals: 18 },
+  rpcUrls: ['https://forno.sepolia.celo.org'],
+  blockExplorerUrls: ['https://sepolia.celoscan.io'],
 };
 
 export interface WalletState {
@@ -28,159 +22,205 @@ export interface WalletState {
   isConnected: boolean;
   isLoading: boolean;
   error: string | null;
+  signer: JsonRpcSigner | null;
+  isMiniPay: boolean; // New: Detect MiniPay for auto-connect/hide buttons
 }
 
 export function useWallet() {
-  const [walletState, setWalletState] = useState<WalletState>({
+  const [state, setState] = useState<WalletState>({
     address: null,
     isConnected: false,
     isLoading: false,
     error: null,
+    signer: null,
+    isMiniPay: false,
   });
 
-  // Load wallet from localStorage on mount
+  // Auto-reconnect on mount (from localStorage or injected provider)
   useEffect(() => {
     const savedAddress = localStorage.getItem('walletAddress');
-    if (savedAddress && window.ethereum) {
-      setWalletState({
-        address: savedAddress,
-        isConnected: true,
-        isLoading: false,
-        error: null,
-      });
+    const providerType = localStorage.getItem('providerType');
+    const ethereum = window.ethereum;
+
+    if (savedAddress && providerType === 'injected' && ethereum) {
+      // Reconnect injected (MetaMask or MiniPay)
+      reconnectInjected(savedAddress);
+    } else if (savedAddress && providerType === 'walletconnect') {
+      // Reconnect WalletConnect (fallback)
+      reconnectWalletConnect();
+    } else if (ethereum && ethereum.isMiniPay) {
+      // Auto-detect and connect MiniPay (implicit connection)
+      connectInjected(true); // Silent connect
     }
   }, []);
 
-  // Listen for account changes
-  useEffect(() => {
-    if (!window.ethereum) return;
-
-    const handleAccountsChanged = (accounts: string[]) => {
-      if (accounts.length === 0) {
-        disconnect();
-      } else {
-        const newAddress = accounts[0];
-        localStorage.setItem('walletAddress', newAddress);
-        setWalletState({
-          address: newAddress,
-          isConnected: true,
-          isLoading: false,
-          error: null,
-        });
-      }
-    };
-
-    window.ethereum.on('accountsChanged', handleAccountsChanged);
-
-    return () => {
-      window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-    };
-  }, []);
-
-  const connectWallet = async (): Promise<string | null> => {
-    if (!window.ethereum) {
-      setWalletState({ ...walletState, error: 'MetaMask not installed' });
-      return null;
-    }
-
-    setWalletState({ ...walletState, isLoading: true, error: null });
-
+  const ensureCeloSepolia = async (rawProvider: any) => {
     try {
-      // Request accounts
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts',
+      await rawProvider.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: CELO_SEPOLIA.chainId }],
       });
-
-      if (accounts.length === 0) {
-        throw new Error('No accounts found');
+    } catch (error: any) {
+      if (error.code === 4902 || error.code === -32603) {
+        await rawProvider.request({
+          method: 'wallet_addEthereumChain',
+          params: [CELO_SEPOLIA],
+        });
+      } else {
+        throw error;
       }
+    }
 
-      const address = accounts[0];
+    const provider = new BrowserProvider(rawProvider);
+    const network = await provider.getNetwork();
+    if (Number(network.chainId) !== 11155111) {
+      throw new Error('Please switch to Celo Sepolia network');
+    }
+  };
 
-      // Switch to Celo Sepolia
-      await switchToCeloSepolia();
+  const connectInjected = async (silent = false) => {
+    const ethereum = window.ethereum;
+    if (!ethereum) {
+      if (!silent) setState(s => ({ ...s, error: 'No injected wallet detected (MetaMask/MiniPay)' }));
+      return;
+    }
 
-      // Save to localStorage
+    setState(s => ({ ...s, isLoading: true, error: null }));
+    try {
+      if (!silent) {
+        await ethereum.request({ method: 'eth_requestAccounts' });
+      }
+      await ensureCeloSepolia(ethereum);
+
+      const provider = new BrowserProvider(ethereum);
+      const signer = await provider.getSigner();
+      const address = await signer.getAddress();
+      const isMiniPay = !!ethereum.isMiniPay;
+
       localStorage.setItem('walletAddress', address);
+      localStorage.setItem('providerType', 'injected');
 
-      setWalletState({
+      setState({
         address,
         isConnected: true,
         isLoading: false,
         error: null,
+        signer,
+        isMiniPay,
       });
 
       return address;
-    } catch (error: any) {
-      setWalletState({
-        address: null,
-        isConnected: false,
+    } catch (err: any) {
+      setState(s => ({ ...s, isLoading: false, error: err.message || 'Injected wallet connection failed' }));
+    }
+  };
+
+  const connectMetaMask = () => connectInjected(false); // Prompt for MetaMask
+
+  const connectMiniPay = () => connectInjected(true); // Silent for MiniPay (but call if not auto-detected)
+
+  const reconnectWalletConnect = async () => {
+    const wc = new WalletConnectProvider({
+      rpc: { 11155111: 'https://forno.sepolia.celo.org' },
+      bridge: 'https://bridge.walletconnect.org',
+    });
+
+    try {
+      await wc.enable();
+      await ensureCeloSepolia(wc);
+
+      const provider = new BrowserProvider(wc);
+      const signer = await provider.getSigner();
+      const address = await signer.getAddress();
+
+      localStorage.setItem('walletAddress', address);
+      localStorage.setItem('providerType', 'walletconnect');
+
+      setState({
+        address,
+        isConnected: true,
         isLoading: false,
-        error: error.message || 'Failed to connect wallet',
+        error: null,
+        signer,
+        isMiniPay: false,
       });
-      return null;
+    } catch (err: any) {
+      localStorage.removeItem('walletAddress');
+      localStorage.removeItem('providerType');
+      console.error('WalletConnect reconnect failed:', err);
     }
   };
 
-  const switchToCeloSepolia = async () => {
-    if (!window.ethereum) return;
-
+  const reconnectInjected = async (savedAddress: string) => {
     try {
-      // Try to switch to Celo Sepolia
-      await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: CELO_SEPOLIA_CHAIN_ID }],
-      });
-    } catch (switchError: any) {
-      // Chain not added, add it
-      if (switchError.code === 4902) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [CELO_SEPOLIA_CONFIG],
-          });
-        } catch (addError: any) {
-          throw new Error('Failed to add Celo network');
-        }
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      if (accounts.includes(savedAddress)) {
+        await connectInjected(true); // Silent reconnect
       } else {
-        throw switchError;
+        localStorage.removeItem('walletAddress');
+        localStorage.removeItem('providerType');
       }
-    }
-  };
-
-  const signMessage = async (message: string): Promise<string | null> => {
-    if (!window.ethereum || !walletState.address) {
-      return null;
-    }
-
-    try {
-      const signature = await window.ethereum.request({
-        method: 'personal_sign',
-        params: [message, walletState.address],
-      });
-
-      return signature;
-    } catch (error) {
-      console.error('Sign message failed:', error);
-      return null;
+    } catch (err) {
+      console.error('Injected reconnect failed:', err);
+      localStorage.removeItem('walletAddress');
+      localStorage.removeItem('providerType');
     }
   };
 
   const disconnect = () => {
+    if (state.signer?.provider && typeof (state.signer.provider as any).disconnect === 'function') {
+      (state.signer.provider as any).disconnect();
+    }
     localStorage.removeItem('walletAddress');
-    setWalletState({
+    localStorage.removeItem('providerType');
+    setState({
       address: null,
       isConnected: false,
       isLoading: false,
       error: null,
+      signer: null,
+      isMiniPay: false,
     });
   };
 
+  // Event listeners for chain/account changes
+  useEffect(() => {
+    const ethereum = window.ethereum;
+    if (!ethereum || !state.isConnected) return;
+
+    const handleChange = () => {
+      if (window.ethereum.isMiniPay) {
+        connectInjected(true); // Reconnect on MiniPay
+      } else {
+        connectInjected(false);
+      }
+    };
+
+    ethereum.on('accountsChanged', handleChange);
+    ethereum.on('chainChanged', handleChange);
+
+    return () => {
+      ethereum.removeListener('accountsChanged', handleChange);
+      ethereum.removeListener('chainChanged', handleChange);
+    };
+  }, [state.isConnected]);
+
+  const signMessage = async (message: string): Promise<string | null> => {
+    if (!state.signer) return null;
+    try {
+      return await state.signer.signMessage(message);
+    } catch (err) {
+      console.error('Sign failed:', err);
+      return null;
+    }
+  };
+
   return {
-    ...walletState,
-    connectWallet,
-    switchToCeloSepolia,
-    signMessage,
+    ...state,
+    connectMetaMask,
+    connectMiniPay, // Use this in components, but auto-triggers for MiniPay
+    reconnectWalletConnect,
     disconnect,
+    signMessage,
   };
 }
