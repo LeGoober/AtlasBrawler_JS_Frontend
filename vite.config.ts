@@ -22,7 +22,11 @@ export default defineConfig(({ mode }) => {
       react(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['assets/**/*'],
+        // Only include specific assets, not all
+        includeAssets: [
+          'favicon.ico',
+          '/assets/atlas_brawler_logo_component.png'
+        ],
 
         manifest: {
           name: 'Atlas Brawler',
@@ -50,35 +54,53 @@ export default defineConfig(({ mode }) => {
           ],
         },
 
-        // Critical fix starts here
         workbox: {
-          // Allow up to 15 MB files to be precached (covers your 9.36 MB MP3 and large sprites)
-          maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, // 15 MB
+          // Allow up to 15 MB files to be precached
+          maximumFileSizeToCacheInBytes: 15 * 1024 * 1024,
 
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3,wav,gif}'],
+          // CRITICAL: Only cache JavaScript and CSS in precache
+          // All other assets go through runtimeCaching below
+          globPatterns: ['**/*.{js,css,html}'],
 
-          // Optional but recommended: better caching for large assets
+          globIgnores: [
+            'node_modules/**/*',
+            'sw.js',
+            'workbox-*.js',
+          ],
+
+          // Cache images, audio, and other assets at runtime instead of precache
           runtimeCaching: [
             {
-              urlPattern: /^https:\/\/.*\.(png|jpg|jpeg|svg|gif|mp3|wav)$/i,
-              handler: 'CacheFirst' as const,
+              urlPattern: /^https:\/\/.*\.(png|jpg|jpeg|svg|gif)$/i,
+              handler: 'CacheFirst',
               options: {
-                cacheName: 'game-assets',
+                cacheName: 'images',
                 expiration: {
                   maxEntries: 100,
                   maxAgeSeconds: 60 * 24 * 60 * 60, // 60 days
                 },
               },
             },
+            {
+              urlPattern: /^https:\/\/.*\.(mp3|wav)$/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'audio',
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 60 * 24 * 60 * 60, // 60 days
+                },
+              },
+            },
           ],
         },
-        // Critical fix ends here
       }),
     ],
 
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      global: 'globalThis',
     },
 
     resolve: {
