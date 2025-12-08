@@ -5,6 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
+
   return {
     server: {
       port: 3000,
@@ -14,10 +15,7 @@ export default defineConfig(({ mode }) => {
     preview: {
       port: 3000,
       host: '0.0.0.0',
-
-      // Required for Render.com preview URLs
       allowedHosts: ['atlasbrawler-js-frontend.onrender.com'],
-
     },
 
     plugins: [
@@ -25,6 +23,7 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['assets/**/*'],
+
         manifest: {
           name: 'Atlas Brawler',
           short_name: 'AtlasBrawler',
@@ -36,38 +35,47 @@ export default defineConfig(({ mode }) => {
           scope: '/',
           start_url: '/',
           icons: [
-
             {
               src: '/assets/atlas_brawler_logo_component.png',
               sizes: '192x192',
               type: 'image/png',
+              purpose: 'any maskable',
             },
-
             {
               src: '/assets/atlas_brawler_logo_component.png',
               sizes: '512x512',
               type: 'image/png',
+              purpose: 'any maskable',
             },
           ],
         },
+
+        // Critical fix starts here
         workbox: {
+          // Allow up to 15 MB files to be precached (covers your 9.36 MB MP3 and large sprites)
+          maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, // 15 MB
+
           globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3,wav,gif}'],
+
+          // Optional but recommended: better caching for large assets
           runtimeCaching: [
             {
-              urlPattern: /^https:\/\/.*\.(png|jpg|jpeg|svg|gif)$/,
+              urlPattern: /^https:\/\/.*\.(png|jpg|jpeg|svg|gif|mp3|wav)$/i,
               handler: 'CacheFirst' as const,
               options: {
-                cacheName: 'images-cache',
+                cacheName: 'game-assets',
                 expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+                  maxEntries: 100,
+                  maxAgeSeconds: 60 * 24 * 60 * 60, // 60 days
                 },
               },
             },
           ],
         },
+        // Critical fix ends here
       }),
     ],
+
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
@@ -78,6 +86,7 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+
     build: {
       outDir: 'dist',
       sourcemap: false,
@@ -91,6 +100,7 @@ export default defineConfig(({ mode }) => {
       },
       copyPublicDir: true,
     },
+
     publicDir: 'public',
   };
 });
