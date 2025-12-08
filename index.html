@@ -2,10 +2,34 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Atlas Brawler</title>
+    <meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#FFF600" />
+    <meta name="description" content="Skate, trick, and earn crypto rewards on Celo!" />
+
+    <!-- PWA / Mobile Web App -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Atlas Brawler" />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/png" href="/assets/atlas_brawler_logo_component.png" />
+    <link rel="apple-touch-icon" href="/assets/atlas_brawler_logo_component.png" />
+
+    <!-- Manifest (PWA) -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <title>Atlas Brawler - Skate & Earn on Celo</title>
+
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+
+    <!-- Retro Font -->
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet" />
+
+    <!-- Tailwind Config -->
     <script>
       tailwind.config = {
         theme: {
@@ -15,7 +39,7 @@
                 yellow: '#FFF600',
                 dark: '#1A1A1A',
                 gray: '#333333',
-              }
+              },
             },
             fontFamily: {
               retro: ['"VT323"', 'monospace'],
@@ -32,52 +56,72 @@
               bounceSlight: {
                 '0%, 100%': { transform: 'translateY(0)' },
                 '50%': { transform: 'translateY(-5px)' },
-              }
-            }
+              },
+            },
           },
         },
-      }
+      };
     </script>
+
+    <!-- Global Styles -->
     <style>
       body {
+        margin: 0;
         background-color: #1A1A1A;
+        color: #FFF600;
         overflow: hidden;
-        touch-action: none;
+        touch-action: manipulation;
+        font-family: 'retro', monospace;
       }
-      /* Pixel art rendering for images */
-      img {
+
+      /* Crisp pixel art rendering */
+      img, canvas {
         image-rendering: pixelated;
+        image-rendering: crisp-edges;
       }
+
+      /* CRT Scanline Effect */
       .scanline {
-        width: 100%;
-        height: 100%;
-        z-index: 10;
-        background: linear-gradient(0deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.1) 50%), linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06));
-        background-size: 100% 2px, 6px 100%;
+        position: fixed;
+        inset: 0;
         pointer-events: none;
-        position: absolute;
-        top: 0;
-        left: 0;
+        z-index: 9999;
+        background:
+          linear-gradient(0deg, transparent 50%, rgba(0, 0, 0, 0.1) 50%),
+          linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+        background-size: 100% 4px, 6px 100%;
       }
+
+      /* Jagged edge clip (optional flair) */
       .clip-jagged {
-        clip-path: polygon(2% 0, 100% 0, 98% 100%, 0% 100%);
+        clip-path: polygon(2% 0, 100% 0, 98% 100%, 0 100%);
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.6",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
-</head>
+
+    <!-- Import Map for Fast CDN Loading (React 19 + deps) -->
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://aistudiocdn.com/react@19.2.0",
+          "react-dom/": "https://aistudiocdn.com/react-dom@19.2.0/",
+          "react/": "https://aistudiocdn.com/react@19.2.0/",
+          "react-router-dom": "https://aistudiocdn.com/react-router-dom@7.9.6",
+          "lucide-react": "https://aistudiocdn.com/lucide-react@0.554.0"
+        }
+      }
+    </script>
+
+  </head>
+
   <body>
+    <!-- Root -->
     <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
+
+    <!-- CRT Scanline Overlay -->
+    <div class="scanline"></div>
+
+    <!-- Entry Point -->
+    <script type="module" src="/index.tsx"></script>
+    <!-- or /index.tsx if that's your entry -->
+  </body>
 </html>

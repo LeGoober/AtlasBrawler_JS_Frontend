@@ -10,7 +10,7 @@
   "icons": [
     {
       "src": "/assets/atlas_brawler_logo_component.png",
-      "sizes": "192x192",
+      "sizes": "600x200",
       "type": "image/png",
       "purpose": "any maskable"
     },
