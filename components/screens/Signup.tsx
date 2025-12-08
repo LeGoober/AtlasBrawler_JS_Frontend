@@ -1,8 +1,8 @@
 // src/components/screens/Signup.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useWallet } from '../../hooks/useWallet';
-import { registerPlayer } from '../../services/api';
+import {useWallet} from '../../src/hooks/useWallet.ts'
+import { registerPlayer } from '../../src/services/api';
 
 interface SignupProps {
     onSignupSuccess: (address: string, username: string) => void;
