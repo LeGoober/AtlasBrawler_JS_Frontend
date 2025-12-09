@@ -1,16 +1,20 @@
 export const APP_NAME = "ATLAS BRAWLER";
 
 export const ASSETS = {
+  // Home/Login Screen
   SKATER_IDLE: "/assets/super_character_sprite(olly_homepage).gif",
   LOGO: "/assets/atlas_brawler_logo_component.png",
   
+  // Shop
   SHOP_ITEM: "/assets/celo_skateboard.png",
   TV_LEFT: "/assets/shop_screen/television-selection-screen_left.png",
   TV_DIAL: "/assets/shop_screen/tv-dial.png",
   
+  // Game Sprites
   PLAYER_SPRITE: "/assets/sprites/player/player-0.png",
   PLAYER_PUNCH_SPRITE: "/assets/sprites/player/player-1.png",
 
+  // Game Controls UI
   JOYSTICK: "/assets/vertical_game_screen/joystick.png",
   BTN_ACTION: "/assets/vertical_game_screen/action-button.png",
   BTN_BACKSIDE: "/assets/vertical_game_screen/backside-btn.png",
@@ -19,19 +23,20 @@ export const ASSETS = {
   PUSH_STRENGTH_INDICATOR: "/assets/vertical_game_screen/push-strength-indicator-bar.png",
   SKATE_CONTROLLER: "/assets/vertical_game_screen/skate-controller-component.png",
 
+  // Game Audio
   GAME_AUDIO: {
     BACKGROUND_MUSIC: "/assets/game_audio/through_the_wire.mp3",
     SCROLL_MOVEMENT: "/assets/game_audio/rolling-desk-chair-31433.mp3",
   },
 
+  // Character Audio
   CHARACTER_AUDIO: {
     TRICK_SOUND: "/assets/character_audio/skateboarding_trick_frontside_backside.wav.mp3",
     PUNCH_ACTION: "/assets/character_audio/character_pixel_jump_audio.mp3",
   },
-  
-  GAME_BG_CITY: `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxwYXR0ZXJuIGlkPSJ3aW5kb3dzIiB4PSIwIiB5PSIwIiB3aWR0aD0iMjAiIGhlaWdodD0iMzAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8cmVjdCB4PSI1IiB5PSI1IiB3aWR0aD0iMTAiIGhlaWdodD0iMTUiIGZpbGw9IiM4N0NFRUIiLz4KICAgIDwvcGF0dGVybj4KICA8L2RlZnM+CiAgPCEtLSBTa3kgLS0+CiAgPHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iIzg3Q0VFQiIvPgogIDwhLS0gQmFjayBCdWlsZGluZ3MgLS0+CiAgPHJlY3QgeD0iMCIgeT0iMjAwIiB3aWR0aD0iMTUwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzUwNTU1NSIvPgogIDxyZWN0IHg9IjIwMCIgeT0iMTUwIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjQ1MCIgZmlsbD0iIzQ0NCIvPgogIDwhLS0gSG9yaXpvbnRhbCBSYWlsIG9uIEJ1aWxkaW5nIDIgLS0+CiAgPHJlY3QgeD0iMjEwIiB5PSIzNTAiIHdpZHRoPSIxNjAiIGhlaWdodD0iNiIgZmlsbD0iI2NjYyIgc3Ryb2tlPSIjMzMzIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cmVjdCB4PSIyMjAiIHk9IjQyMCIgd2lkdGg9IjE0MCIgaGVpZ2h0PSI2IiBmaWxsPSIjY2NjIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxyZWN0IHg9IjU1MCIgeT0iMjUwIiB3aWR0aD0iMTgwIiBoZWlnaHQ9IjM1MCIgZmlsbD0iIzU1NSIvPgogIDwhLS0gTWFpbiBCdWlsZGluZyBSb3cgLS0+CiAgPHJlY3QgeD0iMCIgeT0iMjgwIiB3aWR0aD0iMTgwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iIzcwNzA3MCIvPgogIDxyZWN0IHg9IjEwIiB5PSIyOTAiIHdpZHRoPSIxNjAiIGhlaWdodD0iMjAwIiBmaWxsPSJ1cmwoI3dpbmRvd3MpIi8+CiAgPHJlY3QgeD0iMjAiIHk9IjUwMCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjODdDRUVCIiBzdHJva2U9IiMyMjIiIHN0cm9rZS13aWR0aD0iNCIvPgogIDxyZWN0IHg9IjAiIHk9IjI2MCIgd2lkdGg9IjE4MCIgaGVpZ2h0PSIyMCIgZmlsbD0iIzIyMiIvPgogIDwhLS0gQnVpbGRpbmcgMiAoUHJvbWluZW50IFN0b3JlKSAtLT4KICA8cmVjdCB4PSIxODAiIHk9IjMwMCIgd2lkdGg9IjI1MCIgaGVpZ2h0PSIzMDAiIGZpbGw9IiM5OTkiLz4KICA8cmVjdCB4PSIxODAiIHk9IjQ1MCIgd2lkdGg9IjI1MCIgaGVpZ2h0PSIxMCIgZmlsbD0iIzIyMiIvPgogIDxyZWN0IHg9IjIwMCIgeT0iNDcwIiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjODdDRUVCIiBzdHJva2U9IiMwMDAiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxyZWN0IHg9IjIwMCIgeT0iNDgwIiB3aWR0aD0iODAiIGhlaWdodD0iMzAiIGZpbGw9InJlZCIvPgogIDwhLS0gQnVpbGRpbmcgMyAtLT4KICA8cmVjdCB4PSI0MzAiIHk9IjIyMCIgd2lWR0aD0iMjIwIiBoZWlnaHQ9IjM4MCIgZmlsbD0iIzY2NiIvPgogIDxyZWN0IHg9IjQ0MCIgeT0iMjMwIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0idXJsKCN3aW5kb3dzKSIvPgogIDxyZWN0IHg9IjQzMCIgeT0iNDUwIiB3aWR0aD0iMjIwIiBoZWlnaHQ9IjQwIiBmaWxsPSJ3aGl0ZSIvPgogIDwhLS0gSG9yaXpvbnRhbCBSYWlsIG9uIEJ1aWxkaW5nIDMgLS0+CiAgPHJlY3QgeD0iNDQ1IiB5PSIzODAiIHdpZHRoPSIxODAiIGhlaWdodD0iNiIgZmlsbD0iI2NjYyIgc3Ryb2tlPSIjMzMzIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cmVjdCB4PSI0NTAiIHk9IjUwMCIgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjODdDRUVCIiBzdHJva2U9IiMwMDAiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxyZWN0IHg9IjY1MCIgeT0iMjgwIiB3aWR0aD0iMTUwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iIzU1NSIvPgogIDxyZWN0IHg9IjY2MCIgeT0iMjkwIiB3aWR0aD0iMTMwIiBoZWlnaHQ9IjIwMCIgZmlsbD0idXJsKCN3aW5kb3dzKSIvPgogIDwhLS0gWWVsbG93IFNrYXRlIFJhbXBzIC0tPgogIDwhLS0gUmFtcCAxIChsZWZ0KSAtLT4KICA8cGF0aCBkPSJNIDEwMCA1NzAgTCA4MCA1NzAgUSA4MCA1MjAgMTMwIDUyMCBaIiBmaWxsPSIjRkZGNjAwIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMyIvPgogIDwhLS0gUmFtcCAyIChtaWRkbGUpIC0tPgogIDxwYXRoIGQ9Ik0gMzUwIDU4MCBMIDMyMCA1ODAgUSAzMjAgNTMwIDM4MCA1MzAgWiIgZmlsbD0iI0ZGRjYwMCIgc3Ryb2tlPSIjMzMzIiBzdHJva2Utd2lkdGg9IjMiLz4KICA8IS0tIFJhbXAgMyAocmlnaHQpIC0tPgogIDxwYXRoIGQ9Ik0gNTgwIDU3MCBMIDU1MCA1NzAgUSA1NTAgNTEwIDYyMCA1MTAgWiIgZmlsbD0iI0ZGRjYwMCIgc3Ryb2tlPSIjMzMzIiBzdHJva2Utd2lkdGg9IjMiLz4KPC9zdmc+`
 };
 
+// Obstacle positions for collision detection (relative to 800px width)
 export const OBSTACLES = {
   RAMPS: [
     { x: 80, width: 50, baseY: 570, height: 50, lift: 30 },
@@ -49,4 +54,19 @@ export const COLORS = {
   CELO_YELLOW: '#FFF600',
   CELO_GREEN: '#35D07F',
   CELO_BLUE: '#87CEEB',
+  SKY_BLUE: '#87CEEB',
+  GROUND_GRAY: '#3E3E3E',
+  BUILDING_DARK: '#444',
+  BUILDING_MEDIUM: '#666',
+  BUILDING_LIGHT: '#777',
+};
+
+// CSS gradients for game background
+export const BACKGROUND_GRADIENTS = {
+  SKY: 'linear-gradient(to bottom, #87CEEB 0%, #87CEEB 70%, #3E3E3E 70%, #3E3E3E 100%)',
+  SKYLINE: 'linear-gradient(to right, transparent 0%, #555 10%, #555 15%, transparent 20%, transparent 30%, #666 35%, #666 40%, transparent 45%, transparent 55%, #777 60%, #777 65%, transparent 70%, transparent 80%, #444 85%, #444 90%, transparent 100%)',
+  RAMP: 'linear-gradient(to top right, #FFF600 0%, #FFD700 100%)',
+  RAIL: 'repeating-linear-gradient(90deg, #ccc 0px, #ccc 40px, #999 40px, #999 42px)',
+  STREET_GRID: 'repeating-linear-gradient(90deg, transparent 0px, transparent 38px, rgba(0,0,0,0.2) 38px, rgba(0,0,0,0.2) 40px), repeating-linear-gradient(0deg, transparent 0px, transparent 18px, rgba(0,0,0,0.1) 18px, rgba(0,0,0,0.1) 20px)',
+  STREET_LINES: 'repeating-linear-gradient(90deg, transparent 0px, transparent 78px, #FFF600 78px, #FFF600 82px, transparent 82px, transparent 160px)',
 };

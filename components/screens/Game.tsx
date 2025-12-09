@@ -39,6 +39,12 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
   const trickSoundRef = useRef<HTMLAudioElement | null>(null);
   const punchSoundRef = useRef<HTMLAudioElement | null>(null);
 
+  // Parallax positions
+  const cityPos = useRef(0);
+  const streetPos = useRef(0);
+  const requestRef = useRef<number>(0);
+  const playerPhysicsY = useRef(0);
+
   // Load settings on mount
   useEffect(() => {
     const settings = getGameSettings();
@@ -136,6 +142,7 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
         score: finalScore,
         wavesSurvived,
         isWin: wavesSurvived >= 10,
+        timestamp: undefined
       });
       console.log('Game session completed successfully:', result);
       
@@ -373,39 +380,48 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
   };
 
   // Parallax animation with collision detection
-  const cityPos = useRef(0);
-  const streetPos = useRef(0);
-  const requestRef = useRef<number>(0);
-  const playerPhysicsY = useRef(0);
-
   const animate = () => {
     if (isPaused || isGameOver || countdown !== null) {
       requestRef.current = requestAnimationFrame(animate);
       return;
     }
 
-    cityPos.current -= (pushStrength * 0.05);
-    streetPos.current -= (pushStrength * 0.2);
-
+    // Different speeds for different layers (parallax effect)
+    const speed = pushStrength * 0.2;
+    
+    // Update positions for each layer
+    cityPos.current -= speed * 0.3; // Slowest (distant city)
+    streetPos.current -= speed * 0.8; // Fastest (ground)
+    
+    // Apply transformations to CSS layers
     const cityEl = document.getElementById('city-layer');
     const streetEl = document.getElementById('street-layer');
     
-    if (cityEl) cityEl.style.backgroundPositionX = `${cityPos.current}px`;
-    if (streetEl) streetEl.style.backgroundPositionX = `${streetPos.current}px`;
+    if (cityEl) {
+      cityEl.style.transform = `translateX(${cityPos.current}px)`;
+    }
+    if (streetEl) {
+      streetEl.style.transform = `translateX(${streetPos.current}px)`;
+    }
 
-    const playerX = 50;
+    // Collision detection with obstacles
+    const playerX = 50; // Player's fixed left position
     const playerBottomY = window.innerHeight - 140 - playerVerticalOffset;
-    const playerWidth = 120 * 1.3;
+    const playerWidth = 120 * 1.3; // Scaled player width
     const playerHeight = 120 * 1.3;
     
+    // Calculate scroll offset for obstacles (repeating pattern every 800px)
     const scrollOffset = Math.abs(cityPos.current);
     let hitObstacle = false;
     let currentLift = 0;
 
+    // Check ramps (use city scroll speed since ramps are on ground)
     OBSTACLES.RAMPS.forEach(ramp => {
+      // Ramps repeat every 800px
       const repeats = Math.floor(scrollOffset / 800);
       const effectiveX = ramp.x + (repeats * 800) - scrollOffset;
       
+      // Check if player is over this ramp
       if (effectiveX < playerX + playerWidth && effectiveX + ramp.width > playerX) {
         const rampScreenY = window.innerHeight - (600 - ramp.baseY);
         if (playerBottomY > rampScreenY - ramp.height && playerBottomY < rampScreenY + 20) {
@@ -419,6 +435,7 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
       }
     });
 
+    // Check rails
     OBSTACLES.RAILS.forEach(rail => {
       const repeats = Math.floor(scrollOffset / 800);
       const effectiveX = rail.x + (repeats * 800) - scrollOffset;
@@ -438,9 +455,12 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
 
     setIsOnObstacle(hitObstacle);
 
+    // Apply physics
     if (hitObstacle && pushStrength > 10) {
+      // Lift player when on obstacle
       playerPhysicsY.current = Math.max(playerPhysicsY.current, currentLift);
     } else {
+      // Gravity pulls down
       playerPhysicsY.current = Math.max(0, playerPhysicsY.current - 2);
     }
 
@@ -632,40 +652,149 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
       )}
 
       {/* --- PARALLAX BACKGROUND LAYERS --- */}
-      
-      {/* Layer 1: Sky */}
-      <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#87CEEB] to-[#E0F7FA]"></div>
 
-      {/* Layer 2: City Buildings */}
+      {/* Layer 1: Sky with gradient clouds */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#87CEEB] via-[#87CEEB] to-[#3E3E3E]">
+        {/* Animated clouds */}
+        <div className="absolute top-10 left-10 w-32 h-16 bg-white/10 rounded-full blur-xl animate-pulse"></div>
+        <div className="absolute top-20 right-20 w-40 h-20 bg-white/8 rounded-full blur-xl animate-pulse" style={{animationDelay: '1s'}}></div>
+        <div className="absolute top-40 left-1/3 w-36 h-14 bg-white/12 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}}></div>
+      </div>
+
+      {/* Layer 2: Distant City Skyline (moves slower) */}
       <div 
         id="city-layer"
-        className="absolute inset-0 z-10 bg-repeat-x"
+        className="absolute bottom-0 left-0 right-0 h-[300px] z-5 transition-transform duration-100 ease-linear"
         style={{
-          backgroundImage: `url("${ASSETS.GAME_BG_CITY}")`,
-          backgroundSize: 'auto 100%',
-          backgroundPosition: 'bottom left',
+          background: `
+            /* Skyline silhouette */
+            linear-gradient(to right, transparent 0%, #555 10%, #555 15%, transparent 20%, 
+              transparent 30%, #666 35%, #666 40%, transparent 45%,
+              transparent 55%, #777 60%, #777 65%, transparent 70%,
+              transparent 80%, #444 85%, #444 90%, transparent 100%),
+            /* Window details */
+            repeating-linear-gradient(90deg, 
+              transparent 0px, transparent 40px, 
+              rgba(135, 206, 235, 0.3) 40px, rgba(135, 206, 235, 0.3) 42px,
+              transparent 42px, transparent 80px
+            ),
+            repeating-linear-gradient(0deg, 
+              transparent 0px, transparent 30px, 
+              rgba(135, 206, 235, 0.3) 30px, rgba(135, 206, 235, 0.3) 32px,
+              transparent 32px, transparent 60px
+            )
+          `,
+          backgroundSize: '800px 100%, 100px 100px, 100px 100px',
+          backgroundPosition: 'bottom, bottom, bottom',
+          backgroundRepeat: 'repeat-x, repeat, repeat',
+          clipPath: 'polygon(0% 100%, 0% 30%, 10% 20%, 15% 30%, 20% 20%, 35% 40%, 40% 30%, 45% 40%, 60% 25%, 65% 35%, 70% 25%, 85% 45%, 90% 35%, 100% 45%, 100% 100%)'
         }}
       ></div>
 
-      {/* Layer 3: Street/Ground */}
+      {/* Layer 3: Yellow Skate Ramps (move with medium speed) */}
+      <div 
+        className="absolute bottom-0 left-0 right-0 h-[200px] z-10 overflow-hidden"
+      >
+        {/* Ramp 1 */}
+        <div className="absolute bottom-0 left-[10%] w-[60px] h-[50px]" 
+          style={{
+            background: 'linear-gradient(to top right, #FFF600 0%, #FFD700 100%)',
+            clipPath: 'polygon(0% 100%, 100% 100%, 80% 0%, 20% 0%)',
+            borderTop: '2px solid #333',
+            boxShadow: 'inset 0 4px 8px rgba(255, 246, 0, 0.3)'
+          }}
+        ></div>
+        
+        {/* Ramp 2 */}
+        <div className="absolute bottom-0 left-[40%] w-[70px] h-[60px]"
+          style={{
+            background: 'linear-gradient(to top right, #FFF600 0%, #FFD700 100%)',
+            clipPath: 'polygon(0% 100%, 100% 100%, 85% 0%, 15% 0%)',
+            borderTop: '2px solid #333',
+            boxShadow: 'inset 0 4px 8px rgba(255, 246, 0, 0.3)'
+          }}
+        ></div>
+        
+        {/* Ramp 3 */}
+        <div className="absolute bottom-0 left-[70%] w-[65px] h-[55px]"
+          style={{
+            background: 'linear-gradient(to top right, #FFF600 0%, #FFD700 100%)',
+            clipPath: 'polygon(0% 100%, 100% 100%, 82% 0%, 18% 0%)',
+            borderTop: '2px solid #333',
+            boxShadow: 'inset 0 4px 8px rgba(255, 246, 0, 0.3)'
+          }}
+        ></div>
+      </div>
+
+      {/* Layer 4: Rails/Grinds (move with street) */}
+      <div 
+        className="absolute bottom-[120px] left-0 right-0 h-[6px] z-15"
+        style={{
+          background: 'repeating-linear-gradient(90deg, #ccc 0px, #ccc 40px, #999 40px, #999 42px)',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.5)',
+          borderTop: '1px solid #666',
+          borderBottom: '1px solid #666'
+        }}
+      ></div>
+
+      <div 
+        className="absolute bottom-[90px] left-[5%] right-[5%] h-[6px] z-15"
+        style={{
+          background: 'repeating-linear-gradient(90deg, #ccc 0px, #ccc 40px, #999 40px, #999 42px)',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.5)',
+          borderTop: '1px solid #666',
+          borderBottom: '1px solid #666'
+        }}
+      ></div>
+
+      {/* Layer 5: Street/Ground (moves fastest) */}
       <div 
         id="street-layer"
-        className="absolute bottom-0 left-0 right-0 h-[120px] z-10 border-t-4 border-black"
+        className="absolute bottom-0 left-0 right-0 h-[120px] z-20 border-t-4 border-black transition-transform duration-50 ease-linear"
         style={{ 
           backgroundColor: '#3E3E3E',
           backgroundImage: `
-            repeating-linear-gradient(90deg, transparent 0, transparent 40px, rgba(0,0,0,0.3) 40px, rgba(0,0,0,0.3) 42px),
-            repeating-linear-gradient(0deg, transparent 0, transparent 20px, rgba(0,0,0,0.1) 20px, rgba(0,0,0,0.1) 22px)
+            /* Grid pattern */
+            repeating-linear-gradient(90deg, 
+              transparent 0px, transparent 38px, 
+              rgba(0,0,0,0.2) 38px, rgba(0,0,0,0.2) 40px
+            ),
+            repeating-linear-gradient(0deg, 
+              transparent 0px, transparent 18px, 
+              rgba(0,0,0,0.1) 18px, rgba(0,0,0,0.1) 20px
+            ),
+            /* Yellow street lines */
+            repeating-linear-gradient(90deg, 
+              transparent 0px, transparent 78px,
+              #FFF600 78px, #FFF600 82px,
+              transparent 82px, transparent 160px
+            )
           `,
-          backgroundSize: '100px 100px' 
+          backgroundSize: '40px 120px, 120px 20px, 160px 120px',
+          backgroundPosition: '0px 0px, 0px 0px, 0px 40px',
+          boxShadow: 'inset 0 10px 20px rgba(0,0,0,0.3)'
         }}
       >
-        <div className="w-full h-4 bg-transparent border-b-4 border-dashed border-white/30 absolute top-10"></div>
+        {/* Curb/detail line */}
+        <div className="absolute top-0 left-0 right-0 h-[4px] bg-gradient-to-r from-transparent via-gray-600 to-transparent"></div>
+        
+        {/* Sidewalk edge */}
+        <div className="absolute top-10 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-#FFF600/30 to-transparent border-dashed"></div>
+      </div>
+
+      {/* Layer 6: Speed Lines Effect */}
+      <div className="absolute inset-0 z-25 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0" style={{
+          background: 'repeating-linear-gradient(90deg, transparent 0px, transparent 200px, rgba(255,255,255,0.05) 200px, rgba(255,255,255,0.05) 202px)',
+          opacity: 0,
+          transition: 'opacity 0.3s',
+          ...(pushStrength > 30 && { opacity: 0.7 })
+        }}></div>
       </div>
 
       {/* Player Sprite */}
       <div 
-        className="absolute bottom-[1px] left-[1px] z-20 transition-all duration-100"
+        className="absolute bottom-[1px] left-[1px] z-30 transition-all duration-100"
         style={{ 
           transform: `
             translateX(${playerHorizontalOffset}px) 
