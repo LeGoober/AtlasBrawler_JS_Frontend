@@ -102,7 +102,6 @@ export default defineConfig(({ mode }) => {
         },
 
         optimizeDeps: {
-            include: ['react', 'react-dom', 'react-router-dom'],
             esbuildOptions: {
                 define: {
                     global: 'globalThis',
@@ -114,14 +113,13 @@ export default defineConfig(({ mode }) => {
             alias: {
                 '@': path.resolve(__dirname, '.'),
             },
-            dedupe: ['react', 'react-dom'],
             conditionNames: ['import', 'module', 'browser', 'default'],
         },
 
         build: {
             outDir: 'dist',
             sourcemap: false,
-            minify: 'esbuild',
+            minify: 'terser',
             rollupOptions: {
                 output: {
                     manualChunks: {

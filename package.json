@@ -11,12 +11,12 @@
     "serve": "vite preview --port 3000"
   },
   "dependencies": {
-    "@pixi/react": "^8.0.4",
+    "@pixi/react": "^7.1.1",
     "@walletconnect/web3-provider": "^1.8.0",
     "buffer": "^6.0.3",
     "ethers": "^6.16.0",
     "lucide-react": "^0.554.0",
-    "pixi.js": "^8.0.0",
+    "pixi.js": "^7.4.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^6.28.0"
