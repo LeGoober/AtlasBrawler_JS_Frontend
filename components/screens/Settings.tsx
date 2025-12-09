@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Volume2, Music, Vibrate, CreditCard, Save, HelpCircle } from 'lucide-react';
 import { ScreenContainer, Header, RetroButton } from '../Shared';
-import { getGameSettings, saveGameSettings, GameSettings } from '../../src/utils/gameSettings';
+import { getGameSettings, saveGameSettings } from '../../src/utils/gameSettings';
+import { GameSettings } from '@/src/types';
 
 const Settings: React.FC = () => {
   const [settings, setSettings] = useState<GameSettings>(getGameSettings());

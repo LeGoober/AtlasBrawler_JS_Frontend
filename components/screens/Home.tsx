@@ -98,7 +98,7 @@ const Home: React.FC<HomeProps> = ({ balance, walletAddress, onRefreshBalance })
         <div className="absolute inset-0" style={{ backgroundColor: COLORS.CELO_YELLOW }}></div>
 
         {/* Balance Refresh Button */}
-        <div className="absolute top-20 right-4 z-10">
+        <div className="absolute top-15 right-4 z-10">
           <button
             onClick={handleRefreshBalance}
             disabled={isRefreshing}
@@ -115,7 +115,7 @@ const Home: React.FC<HomeProps> = ({ balance, walletAddress, onRefreshBalance })
         </div>
 
         {/* Player Stats */}
-        <div className="absolute top-20 left-4 z-10 bg-black/40 backdrop-blur-sm border border-white/20 p-2 rounded-lg">
+        <div className="absolute top-15 left-4 z-10 bg-black/40 backdrop-blur-sm border border-white/20 p-2 rounded-lg">
           <div className="text-white text-sm font-retro">
             <div className="text-xs text-gray-300">@{playerStats.username}</div>
             <div className="flex gap-4 mt-1">

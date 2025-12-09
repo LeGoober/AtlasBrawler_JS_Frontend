@@ -13,7 +13,7 @@ interface GameProps {
 const Game: React.FC<GameProps> = ({ walletAddress }) => {
   const navigate = useNavigate();
   const [score, setScore] = useState(0);
-  const [timer, setTimer] = useState(120);
+  const [timer, setTimer] = useState(60);
   const [isPaused, setIsPaused] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [waves, setWaves] = useState(0);
