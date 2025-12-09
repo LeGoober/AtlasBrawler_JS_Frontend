@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Pause, Trophy, TrendingUp } from 'lucide-react';
 import { ScreenContainer } from '../Shared';
-import { ASSETS, OBSTACLES } from '../../src/constants';
+import { ASSETS, OBSTACLES, GAME_BACKGROUND_INLINE_SVG } from '../../src/constants';
 import { completeGameSession, getPlayerBalance } from '../../src/services/api';
 import { getGameSettings } from '../../src/utils/gameSettings';
 
@@ -32,7 +32,10 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
   const [countdown, setCountdown] = useState<number | null>(3);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [audioVolume, setAudioVolume] = useState(0.5);
-  
+
+  // Add this state for background fallback
+  const [backgroundUrl, setBackgroundUrl] = useState(ASSETS.GAME_BACKGROUND_SVG);
+
   // Audio refs
   const backgroundMusicRef = useRef<HTMLAudioElement | null>(null);
   const scrollSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -78,10 +81,23 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
     };
   }, [audioEnabled, audioVolume]);
 
+  // Test if background SVG loads, fallback to inline if not
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      console.log('Background SVG loaded successfully');
+    };
+    img.onerror = () => {
+      console.log('External SVG failed to load, using inline fallback');
+      setBackgroundUrl(GAME_BACKGROUND_INLINE_SVG);
+    };
+    img.src = ASSETS.GAME_BACKGROUND_SVG;
+  }, []);
+
   // Start background music when game starts
   useEffect(() => {
     if (!audioEnabled || countdown !== null) return;
-    
+
     if (!isPaused && !isGameOver && backgroundMusicRef.current) {
       backgroundMusicRef.current.play().catch(err => console.log('Audio play failed:', err));
     } else if (backgroundMusicRef.current) {
@@ -102,7 +118,7 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
       scrollSoundRef.current.currentTime = 0;
     }
   }, [pushStrength, isPaused, isGameOver, audioEnabled, countdown]);
-  
+
   // Fetch player balance on mount
   useEffect(() => {
     if (walletAddress) {
@@ -135,7 +151,7 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
   const handleGameOver = async (finalScore: number, wavesSurvived: number) => {
     setIsGameOver(true);
     setIsPaused(true);
-    
+
     try {
       const result = await completeGameSession({
         walletAddress,
@@ -145,14 +161,14 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
         timestamp: undefined
       });
       console.log('Game session completed successfully:', result);
-      
+
       const updatedPlayer = await getPlayerBalance(walletAddress);
       if (updatedPlayer) {
         setPlayerBalance(updatedPlayer.softTokenBalance || 0);
         setTotalWins(updatedPlayer.totalWins || 0);
         setTotalGames(updatedPlayer.totalGamesPlayed || 0);
       }
-      
+
       setTimeout(() => {
         setShowResultsModal(true);
       }, 1500);
@@ -182,10 +198,10 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!swipeStartRef.current || countdown !== null) return;
-    
+
     const touch = e.touches[0];
     const deltaY = touch.clientY - swipeStartRef.current.y;
-    
+
     if (deltaY > 0) {
       const strength = Math.min((deltaY / 150) * 100, 100);
       setPushStrength(strength);
@@ -194,13 +210,13 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
 
   const handleTouchEnd = () => {
     if (countdown !== null) return;
-    
+
     swipeStartRef.current = null;
-    
+
     if (decayTimerRef.current) {
       clearInterval(decayTimerRef.current);
     }
-    
+
     decayTimerRef.current = window.setInterval(() => {
       setPushStrength((prev) => {
         const newStrength = Math.max(0, prev - 2);
@@ -225,9 +241,9 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isMouseDownRef.current || !swipeStartRef.current || countdown !== null) return;
-    
+
     const deltaY = e.clientY - swipeStartRef.current.y;
-    
+
     if (deltaY > 0) {
       const strength = Math.min((deltaY / 150) * 100, 100);
       setPushStrength(strength);
@@ -243,7 +259,7 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
   // Timer and score updates
   useEffect(() => {
     if (isPaused || isGameOver || countdown !== null) return;
-    
+
     const gameLoop = setInterval(() => {
       setTimer((t) => {
         if (t <= 1) {
@@ -253,7 +269,7 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
         }
         return t - 1;
       });
-      
+
       const pointsPerSecond = Math.floor(pushStrength * 0.15);
       setScore((s) => {
         const newScore = s + pointsPerSecond;
@@ -263,7 +279,7 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
         return newScore;
       });
     }, 1000);
-    
+
     return () => clearInterval(gameLoop);
   }, [isPaused, isGameOver, pushStrength, score, waves, countdown]);
 
@@ -290,19 +306,19 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
   const performFrontside = () => {
     if (isPerformingTrick || countdown !== null) return;
     setIsPerformingTrick(true);
-    
+
     const basePoints = 50;
     const bonusPoints = isOnObstacle ? 50 : 0;
     setScore(prev => prev + basePoints + bonusPoints);
     setWaves(prev => prev + 1);
-    
+
     if (trickSoundRef.current && audioEnabled) {
       trickSoundRef.current.currentTime = 0;
       trickSoundRef.current.play().catch(err => console.log('Trick audio failed:', err));
     }
-    
+
     setPlayerRotation(-7);
-    
+
     setTimeout(() => {
       setPlayerRotation(0);
       setIsPerformingTrick(false);
@@ -312,19 +328,19 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
   const performBackside = () => {
     if (isPerformingTrick || countdown !== null) return;
     setIsPerformingTrick(true);
-    
+
     const basePoints = 50;
     const bonusPoints = isOnObstacle ? 50 : 0;
     setScore(prev => prev + basePoints + bonusPoints);
     setWaves(prev => prev + 1);
-    
+
     if (trickSoundRef.current && audioEnabled) {
       trickSoundRef.current.currentTime = 0;
       trickSoundRef.current.play().catch(err => console.log('Trick audio failed:', err));
     }
-    
+
     setPlayerRotation(7);
-    
+
     setTimeout(() => {
       setPlayerRotation(0);
       setIsPerformingTrick(false);
@@ -334,16 +350,16 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
   const performPunch = () => {
     if (isPerformingTrick || countdown !== null) return;
     setIsPerformingTrick(true);
-    
+
     setScore(prev => prev + 25);
-    
+
     if (punchSoundRef.current && audioEnabled) {
       punchSoundRef.current.currentTime = 0;
       punchSoundRef.current.play().catch(err => console.log('Punch audio failed:', err));
     }
-    
+
     setPlayerHorizontalOffset(50);
-    
+
     setTimeout(() => {
       setPlayerHorizontalOffset(0);
       setIsPerformingTrick(false);
@@ -356,19 +372,19 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
 
   const handleJoystickStart = (e: React.TouchEvent | React.MouseEvent) => {
     if (countdown !== null) return;
-    const pos = 'touches' in e ? 
-      { x: e.touches[0].clientX, y: e.touches[0].clientY } : 
+    const pos = 'touches' in e ?
+      { x: e.touches[0].clientX, y: e.touches[0].clientY } :
       { x: e.clientX, y: e.clientY };
     joystickStartRef.current = pos;
   };
 
   const handleJoystickMove = (e: React.TouchEvent | React.MouseEvent) => {
     if (!joystickStartRef.current || countdown !== null) return;
-    
-    const pos = 'touches' in e ? 
-      { x: e.touches[0].clientX, y: e.touches[0].clientY } : 
+
+    const pos = 'touches' in e ?
+      { x: e.touches[0].clientX, y: e.touches[0].clientY } :
       { x: e.clientX, y: e.clientY };
-    
+
     const deltaY = pos.y - joystickStartRef.current.y;
     const offset = Math.max(0, Math.min(60, 30 - deltaY));
     setPlayerVerticalOffset(offset);
@@ -386,42 +402,32 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
       return;
     }
 
-    // Different speeds for different layers (parallax effect)
+    // Different speeds for parallax layers
     const speed = pushStrength * 0.2;
-    
-    // Update positions for each layer
-    cityPos.current -= speed * 0.3; // Slowest (distant city)
-    streetPos.current -= speed * 0.8; // Fastest (ground)
-    
-    // Apply transformations to CSS layers
+    cityPos.current -= speed * 0.5; // Background moves slower than ground
+    streetPos.current -= speed * 0.8; // Ground moves faster
+
     const cityEl = document.getElementById('city-layer');
     const streetEl = document.getElementById('street-layer');
     
-    if (cityEl) {
-      cityEl.style.transform = `translateX(${cityPos.current}px)`;
-    }
-    if (streetEl) {
-      streetEl.style.transform = `translateX(${streetPos.current}px)`;
-    }
+    if (cityEl) cityEl.style.backgroundPositionX = `${cityPos.current}px`;
+    if (streetEl) streetEl.style.backgroundPositionX = `${streetPos.current}px`;
 
-    // Collision detection with obstacles
-    const playerX = 50; // Player's fixed left position
+    // Collision detection with obstacles (using lowered rail positions)
+    const playerX = 50;
     const playerBottomY = window.innerHeight - 140 - playerVerticalOffset;
-    const playerWidth = 120 * 1.3; // Scaled player width
+    const playerWidth = 120 * 1.3;
     const playerHeight = 120 * 1.3;
     
-    // Calculate scroll offset for obstacles (repeating pattern every 800px)
     const scrollOffset = Math.abs(cityPos.current);
     let hitObstacle = false;
     let currentLift = 0;
 
-    // Check ramps (use city scroll speed since ramps are on ground)
+    // Check ramps
     OBSTACLES.RAMPS.forEach(ramp => {
-      // Ramps repeat every 800px
       const repeats = Math.floor(scrollOffset / 800);
       const effectiveX = ramp.x + (repeats * 800) - scrollOffset;
       
-      // Check if player is over this ramp
       if (effectiveX < playerX + playerWidth && effectiveX + ramp.width > playerX) {
         const rampScreenY = window.innerHeight - (600 - ramp.baseY);
         if (playerBottomY > rampScreenY - ramp.height && playerBottomY < rampScreenY + 20) {
@@ -435,13 +441,13 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
       }
     });
 
-    // Check rails
+    // Check rails (using lowered positions)
     OBSTACLES.RAILS.forEach(rail => {
       const repeats = Math.floor(scrollOffset / 800);
       const effectiveX = rail.x + (repeats * 800) - scrollOffset;
       
       if (effectiveX < playerX + playerWidth && effectiveX + rail.width > playerX) {
-        const railScreenY = window.innerHeight - (600 - rail.y);
+        const railScreenY = window.innerHeight - (600 - rail.y); // y values are now 450, 470, 460
         if (Math.abs(playerBottomY - railScreenY) < 15) {
           hitObstacle = true;
           currentLift = rail.lift;
@@ -457,10 +463,8 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
 
     // Apply physics
     if (hitObstacle && pushStrength > 10) {
-      // Lift player when on obstacle
       playerPhysicsY.current = Math.max(playerPhysicsY.current, currentLift);
     } else {
-      // Gravity pulls down
       playerPhysicsY.current = Math.max(0, playerPhysicsY.current - 2);
     }
 
@@ -505,7 +509,7 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
             </span>
           </div>
         </div>
-        
+
         <div className="flex gap-2">
           <button
             onClick={() => setAudioEnabled(!audioEnabled)}
@@ -525,9 +529,8 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
       {/* Timer Overlay */}
       <div className="absolute top-12 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none">
         <span
-          className={`font-retro text-4xl drop-shadow-[2px_2px_0px_black] ${
-            timer < 10 ? 'text-red-500 animate-pulse' : 'text-white'
-          }`}
+          className={`font-retro text-4xl drop-shadow-[2px_2px_0px_black] ${timer < 10 ? 'text-red-500 animate-pulse' : 'text-white'
+            }`}
         >
           {timer}s
         </span>
@@ -592,7 +595,7 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
           <h2 className="font-retro text-5xl text-celo-yellow mb-8">
             {waves >= 10 ? 'VICTORY!' : 'GAME COMPLETE'}
           </h2>
-          
+
           <div className="bg-white/10 border-4 border-celo-yellow p-8 mb-6 rounded-lg max-w-md w-full">
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="text-center">
@@ -653,137 +656,28 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
 
       {/* --- PARALLAX BACKGROUND LAYERS --- */}
 
-      {/* Layer 1: Sky with gradient clouds */}
+      {/* Layer 1: Sky Gradient Base */}
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#87CEEB] via-[#87CEEB] to-[#3E3E3E]">
-        {/* Animated clouds */}
+        {/* Simple animated clouds */}
         <div className="absolute top-10 left-10 w-32 h-16 bg-white/10 rounded-full blur-xl animate-pulse"></div>
         <div className="absolute top-20 right-20 w-40 h-20 bg-white/8 rounded-full blur-xl animate-pulse" style={{animationDelay: '1s'}}></div>
         <div className="absolute top-40 left-1/3 w-36 h-14 bg-white/12 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}}></div>
       </div>
 
-      {/* Layer 2: Distant City Skyline (moves slower) */}
+      {/* Layer 2: SVG Background with parallax */}
       <div 
         id="city-layer"
-        className="absolute bottom-0 left-0 right-0 h-[300px] z-5 transition-transform duration-100 ease-linear"
+        className="absolute inset-0 z-10 bg-repeat-x"
         style={{
-          background: `
-            /* Skyline silhouette */
-            linear-gradient(to right, transparent 0%, #555 10%, #555 15%, transparent 20%, 
-              transparent 30%, #666 35%, #666 40%, transparent 45%,
-              transparent 55%, #777 60%, #777 65%, transparent 70%,
-              transparent 80%, #444 85%, #444 90%, transparent 100%),
-            /* Window details */
-            repeating-linear-gradient(90deg, 
-              transparent 0px, transparent 40px, 
-              rgba(135, 206, 235, 0.3) 40px, rgba(135, 206, 235, 0.3) 42px,
-              transparent 42px, transparent 80px
-            ),
-            repeating-linear-gradient(0deg, 
-              transparent 0px, transparent 30px, 
-              rgba(135, 206, 235, 0.3) 30px, rgba(135, 206, 235, 0.3) 32px,
-              transparent 32px, transparent 60px
-            )
-          `,
-          backgroundSize: '800px 100%, 100px 100px, 100px 100px',
-          backgroundPosition: 'bottom, bottom, bottom',
-          backgroundRepeat: 'repeat-x, repeat, repeat',
-          clipPath: 'polygon(0% 100%, 0% 30%, 10% 20%, 15% 30%, 20% 20%, 35% 40%, 40% 30%, 45% 40%, 60% 25%, 65% 35%, 70% 25%, 85% 45%, 90% 35%, 100% 45%, 100% 100%)'
+          backgroundImage: `url("${backgroundUrl}")`,
+          backgroundSize: 'auto 100%',
+          backgroundPosition: 'bottom left',
+          backgroundRepeat: 'repeat-x',
         }}
       ></div>
 
-      {/* Layer 3: Yellow Skate Ramps (move with medium speed) */}
-      <div 
-        className="absolute bottom-0 left-0 right-0 h-[200px] z-10 overflow-hidden"
-      >
-        {/* Ramp 1 */}
-        <div className="absolute bottom-0 left-[10%] w-[60px] h-[50px]" 
-          style={{
-            background: 'linear-gradient(to top right, #FFF600 0%, #FFD700 100%)',
-            clipPath: 'polygon(0% 100%, 100% 100%, 80% 0%, 20% 0%)',
-            borderTop: '2px solid #333',
-            boxShadow: 'inset 0 4px 8px rgba(255, 246, 0, 0.3)'
-          }}
-        ></div>
-        
-        {/* Ramp 2 */}
-        <div className="absolute bottom-0 left-[40%] w-[70px] h-[60px]"
-          style={{
-            background: 'linear-gradient(to top right, #FFF600 0%, #FFD700 100%)',
-            clipPath: 'polygon(0% 100%, 100% 100%, 85% 0%, 15% 0%)',
-            borderTop: '2px solid #333',
-            boxShadow: 'inset 0 4px 8px rgba(255, 246, 0, 0.3)'
-          }}
-        ></div>
-        
-        {/* Ramp 3 */}
-        <div className="absolute bottom-0 left-[70%] w-[65px] h-[55px]"
-          style={{
-            background: 'linear-gradient(to top right, #FFF600 0%, #FFD700 100%)',
-            clipPath: 'polygon(0% 100%, 100% 100%, 82% 0%, 18% 0%)',
-            borderTop: '2px solid #333',
-            boxShadow: 'inset 0 4px 8px rgba(255, 246, 0, 0.3)'
-          }}
-        ></div>
-      </div>
-
-      {/* Layer 4: Rails/Grinds (move with street) */}
-      <div 
-        className="absolute bottom-[120px] left-0 right-0 h-[6px] z-15"
-        style={{
-          background: 'repeating-linear-gradient(90deg, #ccc 0px, #ccc 40px, #999 40px, #999 42px)',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.5)',
-          borderTop: '1px solid #666',
-          borderBottom: '1px solid #666'
-        }}
-      ></div>
-
-      <div 
-        className="absolute bottom-[90px] left-[5%] right-[5%] h-[6px] z-15"
-        style={{
-          background: 'repeating-linear-gradient(90deg, #ccc 0px, #ccc 40px, #999 40px, #999 42px)',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.5)',
-          borderTop: '1px solid #666',
-          borderBottom: '1px solid #666'
-        }}
-      ></div>
-
-      {/* Layer 5: Street/Ground (moves fastest) */}
-      <div 
-        id="street-layer"
-        className="absolute bottom-0 left-0 right-0 h-[120px] z-20 border-t-4 border-black transition-transform duration-50 ease-linear"
-        style={{ 
-          backgroundColor: '#3E3E3E',
-          backgroundImage: `
-            /* Grid pattern */
-            repeating-linear-gradient(90deg, 
-              transparent 0px, transparent 38px, 
-              rgba(0,0,0,0.2) 38px, rgba(0,0,0,0.2) 40px
-            ),
-            repeating-linear-gradient(0deg, 
-              transparent 0px, transparent 18px, 
-              rgba(0,0,0,0.1) 18px, rgba(0,0,0,0.1) 20px
-            ),
-            /* Yellow street lines */
-            repeating-linear-gradient(90deg, 
-              transparent 0px, transparent 78px,
-              #FFF600 78px, #FFF600 82px,
-              transparent 82px, transparent 160px
-            )
-          `,
-          backgroundSize: '40px 120px, 120px 20px, 160px 120px',
-          backgroundPosition: '0px 0px, 0px 0px, 0px 40px',
-          boxShadow: 'inset 0 10px 20px rgba(0,0,0,0.3)'
-        }}
-      >
-        {/* Curb/detail line */}
-        <div className="absolute top-0 left-0 right-0 h-[4px] bg-gradient-to-r from-transparent via-gray-600 to-transparent"></div>
-        
-        {/* Sidewalk edge */}
-        <div className="absolute top-10 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-#FFF600/30 to-transparent border-dashed"></div>
-      </div>
-
-      {/* Layer 6: Speed Lines Effect */}
-      <div className="absolute inset-0 z-25 pointer-events-none overflow-hidden">
+      {/* Layer 3: Speed Lines Overlay */}
+      <div className="absolute inset-0 z-15 pointer-events-none overflow-hidden">
         <div className="absolute inset-0" style={{
           background: 'repeating-linear-gradient(90deg, transparent 0px, transparent 200px, rgba(255,255,255,0.05) 200px, rgba(255,255,255,0.05) 202px)',
           opacity: 0,
@@ -791,6 +685,24 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
           ...(pushStrength > 30 && { opacity: 0.7 })
         }}></div>
       </div>
+
+      {/* Layer 4: Particle Effects (optional) */}
+      {pushStrength > 50 && (
+        <div className="absolute inset-0 z-12 pointer-events-none">
+          {Array.from({length: 10}).map((_, i) => (
+            <div 
+              key={i} 
+              className="absolute w-1 h-1 bg-white/30 rounded-full animate-ping" 
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${i * 0.1}s`,
+                animationDuration: '1s'
+              }}
+            ></div>
+          ))}
+        </div>
+      )}
 
       {/* Player Sprite */}
       <div 
@@ -821,7 +733,7 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
       <div className="absolute bottom-0 left-0 right-0 h-48 z-40 flex justify-between items-end p-4 pb-8">
         {/* Left: Push Controller - Swipe Down Area */}
         <div className="flex flex-col items-center gap-2">
-          <div 
+          <div
             ref={pushControllerRef}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
@@ -833,21 +745,21 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
             className="relative w-32 h-36 cursor-pointer touch-none active:scale-95 transition-transform select-none"
           >
             <img src={ASSETS.PUSH_CONTROLLER_BARE_LONG} alt="Push controller" className="w-full h-full object-contain pointer-events-none select-none" />
-           
+
             {/* Stacked strength indicator bars overlayed */}
             <div className="absolute left-[17%] top-[33%] bottom-6 w-4 h-4 flex flex-col-reverse items-center pointer-events-none transition-all duration-200">
               {[...Array(numBars)].map((_, i) => (
                 <img key={i} src={ASSETS.PUSH_STRENGTH_INDICATOR} alt="Strength bar" className="w-full" />
               ))}
             </div>
-            
+
             {/* Visual feedback overlay */}
-            <div 
+            <div
               className="absolute inset-0 bg-celo-yellow/20 rounded-lg opacity-0 transition-opacity duration-200 pointer-events-none"
               style={{ opacity: pushStrength > 0 ? 0.3 : 0 }}
             />
           </div>
-          
+
           {/* Swipe instruction hint */}
           {pushStrength === 0 && countdown === null && (
             <div className="text-white text-xs font-retro animate-pulse bg-black/50 px-2 py-1 rounded">
@@ -860,28 +772,28 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
         <div className="relative w-48 h-48 bg-gray-700/80 p-4 rounded-3xl border-4 border-gray-600 transform -rotate-12 shadow-xl backdrop-blur-sm">
           <img src={ASSETS.SKATE_CONTROLLER} alt="Skate controller background" className="absolute inset-0 w-full h-full object-contain opacity-30 pointer-events-none select-none -z-10" />
           <div className="grid grid-cols-2 gap-4">
-            <button 
+            <button
               onClick={performPunch}
               disabled={countdown !== null}
               className="left-0 right-0 top-[50%] w-12 h-12 rounded-full p-0 border-0 bg-transparent transform translate-y-3 active:scale-90 disabled:opacity-50"
             >
               <img src={ASSETS.BTN_ACTION} alt="Action" className="w-full h-full object-contain" />
             </button>
-            <button 
+            <button
               onClick={performFrontside}
               disabled={countdown !== null}
               className="w-12 h-13 rounded-full p-0 border-0 bg-transparent transform rotate-12 translate-x-2 translate-y-3 active:scale-90 disabled:opacity-50"
             >
               <img src={ASSETS.BTN_FRONTSIDE} alt="Frontside" className="w-full h-full object-contain" />
             </button>
-            <button 
+            <button
               onClick={performBackside}
               disabled={countdown !== null}
               className="w-23 h-12 rounded-full p-0 border-0 bg-transparent transform -rotate-12 -translate-x-1 translate-y-9 active:scale-90 disabled:opacity-50"
             >
               <img src={ASSETS.BTN_BACKSIDE} alt="Backside" className="w-full h-full object-contain" />
             </button>
-            <div 
+            <div
               ref={joystickRef}
               onTouchStart={handleJoystickStart}
               onTouchMove={handleJoystickMove}
