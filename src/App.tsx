@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import Home from './components/screens/Home';
-import Game from './components/screens/Game';
-import Shop from './components/screens/Shop';
-import Settings from './components/screens/Settings';
-import Profile from './components/screens/Profile';
-import Login from './components/screens/Login';
-import Signup from './components/screens/Signup';
-import { GameState } from './types';
-import { useWallet } from './src/hooks/useWallet';
-import { getPlayerBalance } from './src/services/api';
+import Home from '../components/screens/Home';
+import Game from '../components/screens/Game';
+import Shop from '../components/screens/Shop';
+import Settings from '../components/screens/Settings';
+import Profile from '../components/screens/Profile';
+import Login from '../components/screens/Login';
+import Signup from '../components/screens/Signup';
+import { GameState } from '../types';
+import { useWallet } from './hooks/useWallet';
+import { getPlayerBalance } from './services/api';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactElement; isAuthenticated: boolean }> = ({ 

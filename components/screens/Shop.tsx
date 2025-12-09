@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Globe, Check, X } from 'lucide-react';
 import { ScreenContainer, Header, RetroButton } from '../Shared';
-import { ASSETS } from '../../constants';
+import { ASSETS } from '../../src/constants';
 
 const Shop: React.FC<{ balance: number }> = ({ balance }) => {
   const [selectedItem, setSelectedItem] = useState(0);

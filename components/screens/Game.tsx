@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Pause, Trophy, TrendingUp } from 'lucide-react';
 import { ScreenContainer } from '../Shared';
-import { ASSETS, OBSTACLES } from '../../constants';
+import { ASSETS, OBSTACLES } from '../../src/constants';
 import { completeGameSession, getPlayerBalance } from '../../src/services/api';
 
 interface GameProps {

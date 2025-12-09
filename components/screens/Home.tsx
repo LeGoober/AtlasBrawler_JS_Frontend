@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, User, Settings, Play, Wallet } from 'lucide-react';
 import { RetroButton, Header, ScreenContainer } from '../Shared';
-import { ASSETS, COLORS } from '../../constants';
+import { ASSETS, COLORS } from '../../src/constants';
 
 const Home: React.FC<{ balance: number }> = ({ balance }) => {
   const navigate = useNavigate();
