@@ -58,7 +58,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
   // Hide login screen if already connected in MiniPay
   if (isMiniPay && isConnected) {
-    return null; // Let the auto-login effect handle redirect
+    return null;
   }
 
   const handleConnect = async () => {

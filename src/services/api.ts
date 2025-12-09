@@ -1,22 +1,12 @@
-/**
- * Backend API Client for Atlas Brawler
- * Connects to Spring Boot backend (http://localhost:8080/api)
- */
+import { PlayerStats, GameSession } from '../types';
 
 const API_BASE = (import.meta as any)?.env?.VITE_API_URL || 'http://localhost:8080/api';
 
-export interface PlayerResponse {
+export interface PlayerResponse extends PlayerStats {
   id: number;
-  walletAddress: string;
-  username: string;
-  softTokenBalance: number;
-  cUSDBalance: number;
-  totalGamesPlayed: number;
-  totalWins: number;
-  highScore: number;
 }
 
-export interface GameSessionRequest {
+export interface GameSessionRequest extends GameSession {
   walletAddress: string;
   score: number;
   wavesSurvived: number;
@@ -55,17 +45,21 @@ export async function registerPlayer(
  * Get player balance
  */
 export async function getPlayerBalance(walletAddress: string): Promise<PlayerResponse | null> {
-  const response = await fetch(`${API_BASE}/players/${walletAddress}/balance`);
-  
-  if (!response.ok) {
-    // If player is not found, return null instead of throwing so callers can handle this case
-    if (response.status === 404) {
-      return null;
+  try {
+    const response = await fetch(`${API_BASE}/players/${walletAddress}/balance`);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error(`Failed to fetch balance: ${response.statusText}`);
     }
-    throw new Error(`Failed to fetch balance: ${response.statusText}`);
+    
+    return response.json();
+  } catch (err) {
+    console.error('API Error fetching player balance:', err);
+    return null;
   }
-  
-  return response.json();
 }
 
 /**
@@ -119,6 +113,132 @@ export async function getPendingRewards(walletAddress: string): Promise<any[]> {
  * Health check
  */
 export async function healthCheck(): Promise<{ status: string }> {
-  const response = await fetch(`${API_BASE}/health`);
+  try {
+    const response = await fetch(`${API_BASE}/health`);
+    return response.json();
+  } catch (err) {
+    console.error('Health check failed:', err);
+    return { status: 'offline' };
+  }
+}
+
+/**
+ * Get game leaderboard
+ */
+export async function getLeaderboard(limit: number = 10): Promise<PlayerResponse[]> {
+  const response = await fetch(`${API_BASE}/leaderboard?limit=${limit}`);
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch leaderboard: ${response.statusText}`);
+  }
+  
+  return response.json();
+}
+
+/**
+ * Update player username
+ */
+export async function updateUsername(walletAddress: string, newUsername: string): Promise<PlayerResponse> {
+  const response = await fetch(`${API_BASE}/players/${walletAddress}/username`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: newUsername }),
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to update username: ${response.statusText}`);
+  }
+  
+  return response.json();
+}
+
+/**
+ * Get player game history
+ */
+export async function getPlayerHistory(walletAddress: string, limit: number = 10): Promise<any[]> {
+  const response = await fetch(`${API_BASE}/players/${walletAddress}/history?limit=${limit}`);
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch player history: ${response.statusText}`);
+  }
+  
+  return response.json();
+}
+
+/**
+ * Purchase shop item
+ */
+export async function purchaseItem(walletAddress: string, itemId: number, signature: string): Promise<any> {
+  const response = await fetch(`${API_BASE}/shop/purchase`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ walletAddress, itemId, signature }),
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Purchase failed: ${response.statusText}`);
+  }
+  
+  return response.json();
+}
+
+/**
+ * Get available shop items
+ */
+export async function getShopItems(): Promise<any[]> {
+  const response = await fetch(`${API_BASE}/shop/items`);
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch shop items: ${response.statusText}`);
+  }
+  
+  return response.json();
+}
+
+/**
+ * Get player inventory
+ */
+export async function getPlayerInventory(walletAddress: string): Promise<any[]> {
+  const response = await fetch(`${API_BASE}/players/${walletAddress}/inventory`);
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch inventory: ${response.statusText}`);
+  }
+  
+  return response.json();
+}
+
+/**
+ * Transfer tokens to another player
+ */
+export async function transferTokens(
+  fromAddress: string,
+  toAddress: string,
+  amount: number,
+  signature: string
+): Promise<any> {
+  const response = await fetch(`${API_BASE}/tokens/transfer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fromAddress, toAddress, amount, signature }),
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Transfer failed: ${response.statusText}`);
+  }
+  
+  return response.json();
+}
+
+/**
+ * Get transaction history
+ */
+export async function getTransactionHistory(walletAddress: string): Promise<any[]> {
+  const response = await fetch(`${API_BASE}/transactions/${walletAddress}`);
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch transaction history: ${response.statusText}`);
+  }
+  
   return response.json();
 }
