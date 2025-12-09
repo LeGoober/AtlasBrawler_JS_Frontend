@@ -13,7 +13,7 @@ interface GameProps {
 const Game: React.FC<GameProps> = ({ walletAddress }) => {
   const navigate = useNavigate();
   const [score, setScore] = useState(0);
-  const [timer, setTimer] = useState(60);
+  const [timer, setTimer] = useState(60); // Changed from 120 to 60
   const [isPaused, setIsPaused] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [waves, setWaves] = useState(0);
@@ -47,6 +47,9 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
   const streetPos = useRef(0);
   const requestRef = useRef<number>(0);
   const playerPhysicsY = useRef(0);
+  
+  // Timer ref to track interval
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load settings on mount
   useEffect(() => {
@@ -148,9 +151,72 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
     }
   }, [countdown]);
 
+  // Game timer - FIXED: Separated from pushStrength dependency
+  useEffect(() => {
+    // Clear any existing timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    // Don't start timer if game is paused, over, or countdown is active
+    if (isPaused || isGameOver || countdown !== null) return;
+
+    // Start the game timer
+    timerRef.current = setInterval(() => {
+      setTimer(prevTimer => {
+        if (prevTimer <= 1) {
+          // Game over when timer reaches 0
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          handleGameOver(score, waves);
+          return 0;
+        }
+        return prevTimer - 1;
+      });
+    }, 1000);
+
+    // Cleanup on unmount or when dependencies change
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [isPaused, isGameOver, countdown]); // Removed pushStrength, score, waves from dependencies
+
+  // Score updates based on pushStrength - Separated from timer
+  useEffect(() => {
+    if (isPaused || isGameOver || countdown !== null) return;
+
+    const scoreInterval = setInterval(() => {
+      const pointsPerSecond = Math.floor(pushStrength * 0.15);
+      if (pointsPerSecond > 0) {
+        setScore(prev => {
+          const newScore = prev + pointsPerSecond;
+          // Add wave bonus if applicable
+          if (pushStrength > 50 && waves > 0) {
+            return newScore + Math.floor(waves * 0.5);
+          }
+          return newScore;
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(scoreInterval);
+  }, [pushStrength, waves, isPaused, isGameOver, countdown]);
+
   const handleGameOver = async (finalScore: number, wavesSurvived: number) => {
     setIsGameOver(true);
     setIsPaused(true);
+
+    // Clear timer if still running
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
 
     try {
       const result = await completeGameSession({
@@ -256,33 +322,6 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
     handleTouchEnd();
   };
 
-  // Timer and score updates
-  useEffect(() => {
-    if (isPaused || isGameOver || countdown !== null) return;
-
-    const gameLoop = setInterval(() => {
-      setTimer((t) => {
-        if (t <= 1) {
-          clearInterval(gameLoop);
-          handleGameOver(score, waves);
-          return 0;
-        }
-        return t - 1;
-      });
-
-      const pointsPerSecond = Math.floor(pushStrength * 0.15);
-      setScore((s) => {
-        const newScore = s + pointsPerSecond;
-        if (pushStrength > 50 && waves > 0) {
-          return newScore + Math.floor(waves * 0.5);
-        }
-        return newScore;
-      });
-    }, 1000);
-
-    return () => clearInterval(gameLoop);
-  }, [isPaused, isGameOver, pushStrength, score, waves, countdown]);
-
   // Bonus points from obstacles
   useEffect(() => {
     if (isOnObstacle && pushStrength > 20 && countdown === null) {
@@ -298,6 +337,9 @@ const Game: React.FC<GameProps> = ({ walletAddress }) => {
     return () => {
       if (decayTimerRef.current) {
         clearInterval(decayTimerRef.current);
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
       }
     };
   }, []);
