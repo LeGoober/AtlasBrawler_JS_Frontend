@@ -2,7 +2,6 @@ import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
-import commonjs from '@rollup/plugin-commonjs';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
@@ -20,11 +19,10 @@ export default defineConfig(({ mode }) => {
         },
 
         plugins: [
-            commonjs({
-                transformMixedEsModules: true,
-                include: ['node_modules/**'],
+            react({
+                // This is crucial for React 18
+                jsxRuntime: 'automatic',
             }),
-            react(),
             VitePWA({
                 registerType: 'autoUpdate',
                 includeAssets: [
@@ -107,11 +105,25 @@ export default defineConfig(({ mode }) => {
                     global: 'globalThis',
                 },
             },
+            // Add React and related libraries here
+            include: [
+                'react',
+                'react-dom',
+                'react-router-dom',
+                'lucide-react',
+                '@pixi/react',
+                'pixi.js',
+                'buffer',
+            ],
         },
 
         resolve: {
             alias: {
                 '@': path.resolve(__dirname, '.'),
+                // Add React alias to ensure proper resolution
+                'react': path.resolve(__dirname, './node_modules/react'),
+                'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
+                'react-router-dom': path.resolve(__dirname, './node_modules/react-router-dom'),
             },
             conditionNames: ['import', 'module', 'browser', 'default'],
         },
@@ -124,13 +136,19 @@ export default defineConfig(({ mode }) => {
                 output: {
                     manualChunks: {
                         vendor: ['react', 'react-dom', 'react-router-dom'],
+                        pixi: ['pixi.js', '@pixi/react'],
+                        ui: ['lucide-react'],
                     },
                 },
+                // Ensure React is properly bundled
+                external: [],
             },
             copyPublicDir: true,
             commonjsOptions: {
                 transformMixedEsModules: true,
                 esmExternals: true,
+                // Ensure React modules are properly transformed
+                include: [/node_modules/],
             },
         },
 
