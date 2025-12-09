@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../../src/hooks/useWallet';
 
@@ -8,9 +8,16 @@ interface LoginProps {
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
-  const { address, isConnected, isLoading, error, isMiniPay, connectMetaMask } = useWallet();
+  const { 
+    address, 
+    isConnected, 
+    isLoading, 
+    error, 
+    isMiniPay, 
+    connectMetaMask 
+  } = useWallet();
 
-  // Auto-login if already connected (MiniPay or MetaMask)
+  // Auto-login if already connected
   useEffect(() => {
     if (isConnected && address) {
       onLoginSuccess(address);
@@ -18,9 +25,40 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     }
   }, [isConnected, address, onLoginSuccess, navigate]);
 
-  // Hide entire screen if in MiniPay and connected
+  // Show loading state for MiniPay auto-connection
+  if (isMiniPay && isLoading) {
+    return (
+      <div
+        style={{
+          width: '100vw',
+          height: '100vh',
+          background: 'linear-gradient(180deg, #1a1a2e 0%, #16213e 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          fontFamily: '"VT323", monospace',
+        }}
+      >
+        <img
+          src="/assets/atlas_brawler_logo_component.png"
+          alt="Atlas Brawler"
+          style={{ width: '300px', marginBottom: '40px', imageRendering: 'pixelated' }}
+        />
+        
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-celo-yellow mb-4"></div>
+        <p style={{ fontSize: '24px', color: '#FFF600' }}>Connecting to MiniPay...</p>
+        <p style={{ fontSize: '16px', color: '#aaa', marginTop: '20px' }}>
+          Please check your MiniPay wallet
+        </p>
+      </div>
+    );
+  }
+
+  // Hide login screen if already connected in MiniPay
   if (isMiniPay && isConnected) {
-    return null; // MiniPay auto-connects → skip login screen entirely
+    return null; // Let the auto-login effect handle redirect
   }
 
   const handleConnect = async () => {
@@ -89,7 +127,15 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       )}
 
       {error && (
-        <p style={{ marginTop: '20px', color: '#ff6b6b', background: 'rgba(255,107,107,0.1)', padding: '12px', borderRadius: '8px' }}>
+        <p style={{ 
+          marginTop: '20px', 
+          color: '#ff6b6b', 
+          background: 'rgba(255,107,107,0.1)', 
+          padding: '12px', 
+          borderRadius: '8px',
+          maxWidth: '400px',
+          textAlign: 'center'
+        }}>
           {error}
         </p>
       )}
@@ -107,7 +153,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       )}
 
       <div style={{ position: 'absolute', bottom: '20px', fontSize: '12px', color: '#444' }}>
-        Celo Sepolia Testnet • MiniPay Ready
+        Celo Sepolia Testnet • {isMiniPay ? 'MiniPay Ready' : 'MetaMask Supported'}
       </div>
     </div>
   );
