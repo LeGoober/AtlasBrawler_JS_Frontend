@@ -13,6 +13,7 @@
   "dependencies": {
     "@pixi/react": "^8.0.4",
     "@walletconnect/web3-provider": "^1.8.0",
+    "buffer": "^6.0.3",
     "ethers": "^6.16.0",
     "lucide-react": "^0.554.0",
     "pixi.js": "^8.0.0",
