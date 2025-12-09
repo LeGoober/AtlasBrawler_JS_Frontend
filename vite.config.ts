@@ -102,6 +102,7 @@ export default defineConfig(({ mode }) => {
         },
 
         optimizeDeps: {
+            include: ['react', 'react-dom', 'react-router-dom'],
             esbuildOptions: {
                 define: {
                     global: 'globalThis',
@@ -119,7 +120,7 @@ export default defineConfig(({ mode }) => {
         build: {
             outDir: 'dist',
             sourcemap: false,
-            minify: 'terser',
+            minify: 'esbuild',
             rollupOptions: {
                 output: {
                     manualChunks: {
