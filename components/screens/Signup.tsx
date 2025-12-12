@@ -26,6 +26,9 @@ const Signup: React.FC<SignupProps> = ({ onSignupSuccess }) => {
         signMessage: legacySignMessage,
     } = useWallet();
 
+    // Detect if mobile device
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
     // Use WalletConnect address if available, otherwise legacy
     const address = wagmiAddress || legacyAddress;
     const isConnected = wagmiConnected || legacyConnected;
@@ -34,21 +37,12 @@ const Signup: React.FC<SignupProps> = ({ onSignupSuccess }) => {
     const [status, setStatus] = useState('');
     const [localError, setLocalError] = useState('');
 
-    // Auto-connect in MiniPay on mount
+    // Auto-connect in MiniPay on mount (mobile browser with MiniPay injected)
     useEffect(() => {
         if (isMiniPay && !isConnected) {
             connectMetaMask(); // Silent connect
         }
     }, [isMiniPay, isConnected, connectMetaMask]);
-
-    // Auto-redirect if already connected (user exists or just signed up)
-    useEffect(() => {
-        if (isConnected && address) {
-            // Optional: check if user exists in backend → for now just go home
-            onSignupSuccess(address, username || 'Skater');
-            setTimeout(() => navigate('/'), 800);
-        }
-    }, [isConnected, address, username, onSignupSuccess, navigate]);
 
     const handleRegister = async () => {
         if (!address) return;
@@ -208,52 +202,85 @@ const Signup: React.FC<SignupProps> = ({ onSignupSuccess }) => {
 
             {!isConnected ? (
                 <>
-                    <p style={{ color: '#aaa', marginBottom: '20px', fontSize: '20px' }}>
-                        Connect your MiniPay wallet
-                    </p>
-                    <p style={{ color: '#888', marginBottom: '40px', fontSize: '16px', maxWidth: '400px' }}>
-                        Click below to show QR code. Scan with MiniPay app.
-                    </p>
-                    <button
-                        onClick={() => open()}
-                        disabled={isLoading}
-                        style={{
-                            padding: '18px 60px',
-                            fontSize: '22px',
-                            background: 'linear-gradient(135deg, #FFF600, #FFD700)',
-                            color: '#000',
-                            border: 'none',
-                            borderRadius: '16px',
-                            fontWeight: 'bold',
-                            cursor: isLoading ? 'not-allowed' : 'pointer',
-                            boxShadow: '0 8px 30px rgba(255,246,0,0.3)',
-                            marginBottom: '20px',
-                        }}
-                    >
-                        {isLoading ? 'Connecting...' : 'Connect MiniPay'}
-                    </button>
-                    <p style={{ color: '#666', fontSize: '14px' }}>or</p>
-                    <button
-                        onClick={connectMetaMask}
-                        disabled={isLoading}
-                        style={{
-                            padding: '14px 40px',
-                            fontSize: '18px',
-                            background: 'transparent',
-                            color: '#FFF600',
-                            border: '2px solid #FFF600',
-                            borderRadius: '12px',
-                            fontWeight: 'bold',
-                            cursor: isLoading ? 'not-allowed' : 'pointer',
-                            marginTop: '10px',
-                        }}
-                    >
-                        Connect MetaMask
-                    </button>
+                    {isMobile ? (
+                        <>
+                            <p style={{ color: '#aaa', marginBottom: '20px', fontSize: '20px' }}>
+                                Connect your wallet
+                            </p>
+                            <p style={{ color: '#888', marginBottom: '40px', fontSize: '16px', maxWidth: '400px' }}>
+                                This will open your MiniPay or MetaMask app
+                            </p>
+                            <button
+                                onClick={() => open()}
+                                disabled={isLoading}
+                                style={{
+                                    padding: '18px 60px',
+                                    fontSize: '22px',
+                                    background: 'linear-gradient(135deg, #FFF600, #FFD700)',
+                                    color: '#000',
+                                    border: 'none',
+                                    borderRadius: '16px',
+                                    fontWeight: 'bold',
+                                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                                    boxShadow: '0 8px 30px rgba(255,246,0,0.3)',
+                                }}
+                            >
+                                {isLoading ? 'Connecting...' : 'Connect Wallet'}
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <p style={{ color: '#aaa', marginBottom: '20px', fontSize: '20px' }}>
+                                Connect your wallet
+                            </p>
+                            <p style={{ color: '#888', marginBottom: '40px', fontSize: '16px', maxWidth: '400px' }}>
+                                Scan QR code with MiniPay or connect MetaMask browser extension
+                            </p>
+                            <button
+                                onClick={() => open()}
+                                disabled={isLoading}
+                                style={{
+                                    padding: '18px 60px',
+                                    fontSize: '22px',
+                                    background: 'linear-gradient(135deg, #FFF600, #FFD700)',
+                                    color: '#000',
+                                    border: 'none',
+                                    borderRadius: '16px',
+                                    fontWeight: 'bold',
+                                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                                    boxShadow: '0 8px 30px rgba(255,246,0,0.3)',
+                                    marginBottom: '20px',
+                                }}
+                            >
+                                {isLoading ? 'Connecting...' : 'Connect Wallet (QR Code)'}
+                            </button>
+                            <p style={{ color: '#666', fontSize: '14px' }}>or</p>
+                            <button
+                                onClick={connectMetaMask}
+                                disabled={isLoading}
+                                style={{
+                                    padding: '14px 40px',
+                                    fontSize: '18px',
+                                    background: 'transparent',
+                                    color: '#FFF600',
+                                    border: '2px solid #FFF600',
+                                    borderRadius: '12px',
+                                    fontWeight: 'bold',
+                                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                                    marginTop: '10px',
+                                }}
+                            >
+                                MetaMask Extension
+                            </button>
+                        </>
+                    )}
                 </>
             ) : (
                 <>
-                    <p style={{ color: '#aaa', marginBottom: '20px' }}>Wallet connected!</p>
+                    <p style={{ color: '#35D07F', marginBottom: '10px', fontSize: '18px' }}>✓ Wallet Connected</p>
+                    <p style={{ color: '#666', marginBottom: '30px', fontSize: '14px' }}>
+                        {address?.slice(0, 6)}...{address?.slice(-4)}
+                    </p>
 
                     <input
                         type="text"
@@ -261,10 +288,12 @@ const Signup: React.FC<SignupProps> = ({ onSignupSuccess }) => {
                         onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20))}
                         onKeyDown={(e) => e.key === 'Enter' && handleRegister()}
                         placeholder="Choose your username"
+                        autoFocus
                         style={{
                             padding: '16px',
                             fontSize: '20px',
                             width: '320px',
+                            maxWidth: '90%',
                             background: '#16213E',
                             border: '3px solid #FFF600',
                             borderRadius: '12px',
@@ -276,18 +305,18 @@ const Signup: React.FC<SignupProps> = ({ onSignupSuccess }) => {
 
                     <button
                         onClick={handleRegister}
-                        disabled={!username.trim() || username.length < 3}
+                        disabled={!username.trim() || username.length < 3 || !!status}
                         style={{
                             padding: '18px 60px',
                             fontSize: '24px',
-                            background: username.trim().length >= 3
+                            background: (username.trim().length >= 3 && !status)
                                 ? 'linear-gradient(135deg, #FFF600, #FFD700)'
                                 : '#555',
-                            color: username.trim().length >= 3 ? '#000' : '#aaa',
+                            color: (username.trim().length >= 3 && !status) ? '#000' : '#aaa',
                             border: 'none',
                             borderRadius: '16px',
                             fontWeight: 'bold',
-                            cursor: username.trim().length >= 3 ? 'pointer' : 'not-allowed',
+                            cursor: (username.trim().length >= 3 && !status) ? 'pointer' : 'not-allowed',
                         }}
                     >
                         {status || 'Sign & Join'}

@@ -31,7 +31,16 @@ createWeb3Modal({
   themeVariables: {
     '--w3m-color-mix': '#FFF600',
     '--w3m-accent': '#FFF600',
-  }
+  },
+  featuredWalletIds: [
+    'fd20dc426fb37566d803205b19bbc1d4096b248ac04548e3cfb6b3a38bd033aa', // Coinbase
+    'c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96', // MetaMask
+  ],
+  includeWalletIds: [
+    'c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96', // MetaMask
+    '0b415a746fb9ee99cce155c2ceca0c6f6061b1dbca2d722b3ba16381d0562150', // MiniPay
+  ],
+  enableOnramp: false,
 })
 
 export const queryClient = new QueryClient()
