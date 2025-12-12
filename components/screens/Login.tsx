@@ -153,7 +153,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       )}
 
       <div style={{ position: 'absolute', bottom: '20px', fontSize: '12px', color: '#444' }}>
-        Celo Sepolia Testnet • {isMiniPay ? 'MiniPay Ready' : 'MetaMask Supported'}
+        Celo Mainnet • {isMiniPay ? 'MiniPay Ready' : 'MetaMask Supported'}
       </div>
     </div>
   );

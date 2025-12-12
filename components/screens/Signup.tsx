@@ -157,7 +157,7 @@ const Signup: React.FC<SignupProps> = ({ onSignupSuccess }) => {
                 )}
 
                 <div style={{ position: 'absolute', bottom: '30px', color: '#666', fontSize: '14px' }}>
-                    Celo Sepolia • MiniPay Native
+                    Celo Mainnet • MiniPay Native
                 </div>
             </div>
         );
@@ -208,7 +208,7 @@ const Signup: React.FC<SignupProps> = ({ onSignupSuccess }) => {
                             cursor: 'pointer',
                         }}
                     >
-                        {isLoading ? 'Connecting...' : 'Connect MetaMask'}
+                        {isLoading ? 'Connecting...' : 'Connecting MiniPay Wallet'}
                     </button>
                 </>
             ) : (
