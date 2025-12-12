@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { WagmiProvider } from 'wagmi';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { config, queryClient } from './config/wagmi';
 import Home from '../components/screens/Home';
 import Game from '../components/screens/Game';
 import Shop from '../components/screens/Shop';
@@ -9,7 +12,7 @@ import Login from '../components/screens/Login';
 import Signup from '../components/screens/Signup';
 import { GameState } from './types';
 import { useWallet } from './hooks/useWallet';
-import { getPlayerBalance } from './services/api'; // Correct import
+import { getPlayerBalance } from './services/api';
 import { getLastWalletAddress } from './utils/gameSettings';
 
 // Protected Route Component
@@ -105,8 +108,10 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <Router>
-      <Routes>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
         <Route path="/signup" element={<Signup onSignupSuccess={handleSignupSuccess} />} />
@@ -158,8 +163,10 @@ const App: React.FC = () => {
         />
         
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+          </Routes>
+        </Router>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 };
 
