@@ -11,17 +11,30 @@ declare global {
   }
 }
 
-const CELO_SEPOLIA = {
-  chainId: '0xaef3',
-  chainName: 'Celo Sepolia',
+const CELO_MAINNET = {
+  chainId: '0xa4ec',
+  chainName: 'Celo Mainnet',
   nativeCurrency: { 
     name: 'CELO', 
     symbol: 'CELO', 
     decimals: 18 
   },
-  rpcUrls: ['https://alfajores-forno.celo-testnet.org'],
-  blockExplorerUrls: ['https://alfajores.celoscan.io/'],
+  rpcUrls: ['https://forno.celo.org'],
+  blockExplorerUrls: ['https://celoscan.io/'],
 };
+
+// Testnet config (for development)
+// const CELO_SEPOLIA = {
+//   chainId: '0xaef3',
+//   chainName: 'Celo Sepolia',
+//   nativeCurrency: { 
+//     name: 'CELO', 
+//     symbol: 'CELO', 
+//     decimals: 18 
+//   },
+//   rpcUrls: ['https://alfajores-forno.celo-testnet.org'],
+//   blockExplorerUrls: ['https://alfajores.celoscan.io/'],
+// };
 
 export function useWallet() {
   const [state, setState] = useState<WalletConnection>({
@@ -60,7 +73,7 @@ export function useWallet() {
           if (accounts.length > 0) {
             console.log('Found existing connection:', accounts[0]);
             
-            await ensureCeloSepolia(ethereum);
+            await ensureCeloMainnet(ethereum);
             
             const provider = new BrowserProvider(ethereum);
             const signerInstance = await provider.getSigner();
@@ -89,11 +102,11 @@ export function useWallet() {
     checkConnection();
   }, []);
 
-  const ensureCeloSepolia = async (rawProvider: any) => {
+  const ensureCeloMainnet = async (rawProvider: any) => {
     try {
       await rawProvider.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: CELO_SEPOLIA.chainId }],
+        params: [{ chainId: CELO_MAINNET.chainId }],
       });
     } catch (error: any) {
       console.log('Switch error:', error);
@@ -102,11 +115,11 @@ export function useWallet() {
         try {
           await rawProvider.request({
             method: 'wallet_addEthereumChain',
-            params: [CELO_SEPOLIA],
+            params: [CELO_MAINNET],
           });
         } catch (addError) {
           console.warn('Failed to add Celo network:', addError);
-          throw new Error('Please add Celo Sepolia network to your wallet');
+          throw new Error('Please add Celo Mainnet network to your wallet');
         }
       } else {
         throw error;
@@ -118,8 +131,8 @@ export function useWallet() {
       const network = await provider.getNetwork();
       console.log('Current network:', Number(network.chainId));
       
-      if (Number(network.chainId) !== 44787) {
-        console.warn('Not on Celo Sepolia, current chain:', network.chainId);
+      if (Number(network.chainId) !== 42220) {
+        console.warn('Not on Celo Mainnet, current chain:', network.chainId);
       }
     } catch (err) {
       console.warn('Could not verify network:', err);
@@ -159,7 +172,7 @@ export function useWallet() {
       }
 
       if (!isMiniPay) {
-        await ensureCeloSepolia(ethereum);
+        await ensureCeloMainnet(ethereum);
       }
 
       const provider = new BrowserProvider(ethereum);
