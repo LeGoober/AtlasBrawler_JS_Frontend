@@ -15,7 +15,9 @@ export default defineConfig(({ mode }) => {
         preview: {
             port: 3000,
             host: '0.0.0.0',
-            allowedHosts: ['atlasbrawler-js-frontend.onrender.com'],
+            allowedHosts: ['atlasbrawler-js-frontend.onrender.com',
+                'atlasbrawler-js-frontend-1.onrender.com/'
+            ],
         },
 
         plugins: [
