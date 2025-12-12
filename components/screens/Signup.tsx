@@ -1,8 +1,6 @@
 // src/components/screens/Signup.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useWeb3Modal } from '@web3modal/wagmi/react';
-import { useAccount, useSignMessage } from 'wagmi';
 import {useWallet} from '../../src/hooks/useWallet.ts'
 import { registerPlayer } from '../../src/services/api';
 
@@ -12,26 +10,15 @@ interface SignupProps {
 
 const Signup: React.FC<SignupProps> = ({ onSignupSuccess }) => {
     const navigate = useNavigate();
-    const { open } = useWeb3Modal();
-    const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount();
-    const { signMessageAsync } = useSignMessage();
-    
     const {
-        address: legacyAddress,
-        isConnected: legacyConnected,
+        address,
+        isConnected,
         isLoading,
         error,
         isMiniPay,
         connectMetaMask,
-        signMessage: legacySignMessage,
+        signMessage,
     } = useWallet();
-
-    // Detect if mobile device
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-    // Use WalletConnect address if available, otherwise legacy
-    const address = wagmiAddress || legacyAddress;
-    const isConnected = wagmiConnected || legacyConnected;
 
     const [username, setUsername] = useState('');
     const [status, setStatus] = useState('');
@@ -59,23 +46,16 @@ const Signup: React.FC<SignupProps> = ({ onSignupSuccess }) => {
 
         const message = `Atlas Brawler Registration\n\nUsername: ${trimmed}\nAddress: ${address}\nTime: ${Date.now()}`;
 
+        const signature = await signMessage(message);
+        if (!signature) {
+            setLocalError('Signature rejected');
+            setStatus('');
+            return;
+        }
+
+        setStatus('Creating your skater...');
+
         try {
-            // Try WalletConnect signature first, fallback to legacy
-            let signature: string;
-            if (wagmiConnected) {
-                signature = await signMessageAsync({ message });
-            } else {
-                const sig = await legacySignMessage(message);
-                if (!sig) {
-                    setLocalError('Signature rejected');
-                    setStatus('');
-                    return;
-                }
-                signature = sig;
-            }
-
-            setStatus('Creating your skater...');
-
             await registerPlayer(address, trimmed, signature, message);
             setStatus('Welcome to the streets!');
             onSignupSuccess(address, trimmed);
@@ -202,78 +182,29 @@ const Signup: React.FC<SignupProps> = ({ onSignupSuccess }) => {
 
             {!isConnected ? (
                 <>
-                    {isMobile ? (
-                        <>
-                            <p style={{ color: '#aaa', marginBottom: '20px', fontSize: '20px' }}>
-                                Connect your wallet
-                            </p>
-                            <p style={{ color: '#888', marginBottom: '40px', fontSize: '16px', maxWidth: '400px' }}>
-                                This will open your MiniPay or MetaMask app
-                            </p>
-                            <button
-                                onClick={() => open()}
-                                disabled={isLoading}
-                                style={{
-                                    padding: '18px 60px',
-                                    fontSize: '22px',
-                                    background: 'linear-gradient(135deg, #FFF600, #FFD700)',
-                                    color: '#000',
-                                    border: 'none',
-                                    borderRadius: '16px',
-                                    fontWeight: 'bold',
-                                    cursor: isLoading ? 'not-allowed' : 'pointer',
-                                    boxShadow: '0 8px 30px rgba(255,246,0,0.3)',
-                                }}
-                            >
-                                {isLoading ? 'Connecting...' : 'Connect Wallet'}
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <p style={{ color: '#aaa', marginBottom: '20px', fontSize: '20px' }}>
-                                Connect your wallet
-                            </p>
-                            <p style={{ color: '#888', marginBottom: '40px', fontSize: '16px', maxWidth: '400px' }}>
-                                Scan QR code with MiniPay or connect MetaMask browser extension
-                            </p>
-                            <button
-                                onClick={() => open()}
-                                disabled={isLoading}
-                                style={{
-                                    padding: '18px 60px',
-                                    fontSize: '22px',
-                                    background: 'linear-gradient(135deg, #FFF600, #FFD700)',
-                                    color: '#000',
-                                    border: 'none',
-                                    borderRadius: '16px',
-                                    fontWeight: 'bold',
-                                    cursor: isLoading ? 'not-allowed' : 'pointer',
-                                    boxShadow: '0 8px 30px rgba(255,246,0,0.3)',
-                                    marginBottom: '20px',
-                                }}
-                            >
-                                {isLoading ? 'Connecting...' : 'Connect Wallet (QR Code)'}
-                            </button>
-                            <p style={{ color: '#666', fontSize: '14px' }}>or</p>
-                            <button
-                                onClick={connectMetaMask}
-                                disabled={isLoading}
-                                style={{
-                                    padding: '14px 40px',
-                                    fontSize: '18px',
-                                    background: 'transparent',
-                                    color: '#FFF600',
-                                    border: '2px solid #FFF600',
-                                    borderRadius: '12px',
-                                    fontWeight: 'bold',
-                                    cursor: isLoading ? 'not-allowed' : 'pointer',
-                                    marginTop: '10px',
-                                }}
-                            >
-                                MetaMask Extension
-                            </button>
-                        </>
-                    )}
+                    <p style={{ color: '#aaa', marginBottom: '20px', fontSize: '20px' }}>
+                        Connect your wallet
+                    </p>
+                    <p style={{ color: '#888', marginBottom: '40px', fontSize: '16px', maxWidth: '400px' }}>
+                        {isMiniPay ? 'MiniPay detected - tap to connect' : 'Connect MiniPay or MetaMask'}
+                    </p>
+                    <button
+                        onClick={connectMetaMask}
+                        disabled={isLoading}
+                        style={{
+                            padding: '18px 60px',
+                            fontSize: '22px',
+                            background: 'linear-gradient(135deg, #FFF600, #FFD700)',
+                            color: '#000',
+                            border: 'none',
+                            borderRadius: '16px',
+                            fontWeight: 'bold',
+                            cursor: isLoading ? 'not-allowed' : 'pointer',
+                            boxShadow: '0 8px 30px rgba(255,246,0,0.3)',
+                        }}
+                    >
+                        {isLoading ? 'Connecting...' : 'Connect Wallet'}
+                    </button>
                 </>
             ) : (
                 <>
